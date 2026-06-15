@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 1 — What are generics, and why do they exist?</title>
+  <style>
+    :root {
+      --text: #1a1a1a;
+      --muted: #666;
+      --accent: #2563eb;
+      --code-bg: #f5f5f0;
+      --border: #e0e0d8;
+      --correct: #16a34a;
+      --wrong: #dc2626;
+      --warn-bg: #fefce8;
+      --warn-border: #ca8a04;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 18px;
+      line-height: 1.7;
+      color: var(--text);
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 6rem;
+    }
+    h1 { font-size: 1.75rem; font-weight: bold; margin-bottom: 0.25rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 2.5rem; font-style: italic; }
+    h2 { font-size: 1.2rem; font-weight: bold; margin: 2.5rem 0 0.75rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+
+    pre, code {
+      font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+      font-size: 0.875rem;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      margin: 1.25rem 0;
+      line-height: 1.6;
+    }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; }
+
+    .callout {
+      border-left: 3px solid var(--accent);
+      padding: 0.75rem 1rem;
+      margin: 1.5rem 0;
+      background: #eff6ff;
+      border-radius: 0 6px 6px 0;
+    }
+    .callout p { margin: 0; }
+
+    .warn {
+      border-left: 3px solid var(--warn-border);
+      padding: 0.75rem 1rem;
+      margin: 1.5rem 0;
+      background: var(--warn-bg);
+      border-radius: 0 6px 6px 0;
+    }
+    .warn p { margin: 0; }
+
+    /* Quiz */
+    .quiz {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin: 2.5rem 0;
+      background: #fafaf8;
+    }
+    .quiz h3 { font-size: 1rem; margin-bottom: 1.25rem; font-weight: bold; color: var(--text); }
+    .question { margin-bottom: 1.75rem; }
+    .question p { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option {
+      display: block;
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+      font-size: 0.85rem;
+      background: white;
+      text-align: left;
+      transition: background 0.15s, border-color 0.15s;
+      width: 100%;
+    }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: var(--correct); }
+    .option.wrong { background: #fee2e2; border-color: var(--wrong); color: var(--wrong); }
+    .option.reveal { background: #dcfce7; border-color: var(--correct); color: var(--correct); opacity: 0.7; }
+    .feedback { font-size: 0.88rem; margin-top: 0.5rem; min-height: 1.2em; }
+    .feedback.ok { color: var(--correct); }
+    .feedback.err { color: var(--wrong); }
+
+    .score-area { display: none; text-align: center; padding: 1rem; }
+    .score-area.visible { display: block; }
+    .score-area p { font-size: 1.1rem; }
+
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+    .nav p { font-size: 0.9rem; color: var(--muted); }
+
+    .primary-source {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 2rem 0;
+      font-size: 0.92rem;
+    }
+    .primary-source strong { display: block; margin-bottom: 0.25rem; }
+
+    .progress { font-size: 0.8rem; color: var(--muted); margin-bottom: 2rem; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    .interview-tag {
+      display: inline-block;
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      color: #92400e;
+      font-size: 0.72rem;
+      font-family: 'SF Mono', monospace;
+      padding: 0.1em 0.5em;
+      border-radius: 4px;
+      vertical-align: middle;
+      margin-left: 0.4rem;
+      letter-spacing: 0.03em;
+    }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 1 of ? &nbsp;·&nbsp; TypeScript Generics &nbsp;·&nbsp; Fundamentals</p>
+<h1>What are generics, and why do they exist?</h1>
+<p class="meta">~10 minutes &nbsp;·&nbsp; Interview relevance: high</p>
+
+<p>Generics are TypeScript's answer to a simple problem: <strong>how do you write a function that works with any type, but still lets TypeScript catch your mistakes?</strong></p>
+
+<p>You've already used generics without knowing it. Every time you write <code>Array&lt;string&gt;</code> or <code>Promise&lt;number&gt;</code>, you're using them. This lesson explains what's actually happening.</p>
+
+<h2>The problem generics solve</h2>
+
+<p>Suppose you want a function that takes a value and returns it unchanged — the simplest possible function:</p>
+
+<pre>// JavaScript — no types
+function identity(arg) {
+  return arg;
+}</pre>
+
+<p>In TypeScript, you need to give <code>arg</code> a type. Your first instinct might be <code>any</code>:</p>
+
+<pre>function identity(arg: any): any {
+  return arg;
+}</pre>
+
+<p>This compiles. But you've thrown away all type safety:</p>
+
+<pre>const result = identity("hello");
+// TypeScript thinks result is: any
+// You've lost the information that it's a string</pre>
+
+<div class="warn">
+  <p><strong>Why <code>any</code> is dangerous in interviews:</strong> If you reach for <code>any</code> in an interview, the interviewer will push back. It signals you're opting out of TypeScript, not using it.</p>
+</div>
+
+<h2>Enter generics: a type parameter</h2>
+
+<p>Generics let you say: <em>"I don't know what type this will be yet — but whatever it is, track it."</em></p>
+
+<pre>function identity&lt;T&gt;(arg: T): T {
+  return arg;
+}</pre>
+
+<p><code>T</code> is called a <strong>type parameter</strong>. Think of it like a variable — but for types, not values. When you call the function, TypeScript fills in <code>T</code> automatically:</p>
+
+<pre>const a = identity("hello");  // T = string  → returns string
+const b = identity(42);        // T = number  → returns number
+const c = identity(true);      // T = boolean → returns boolean</pre>
+
+<div class="callout">
+  <p><strong>Key insight:</strong> TypeScript <em>infers</em> <code>T</code> from the argument you pass. You rarely need to write it explicitly.</p>
+</div>
+
+<h2>Why the name "T"? <span class="interview-tag">interview</span></h2>
+
+<p><code>T</code> is just a convention — short for "Type." You can name it anything. But in interviews, using <code>T</code> is the expected convention. You'll also see:</p>
+
+<pre>// Multiple type parameters — also conventional names:
+function pair&lt;T, U&gt;(first: T, second: U): [T, U] {
+  return [first, second];
+}
+
+// For collections, K (key) and V (value) are common:
+function getProperty&lt;T, K extends keyof T&gt;(obj: T, key: K) {
+  return obj[key];
+}</pre>
+
+<p>Don't worry about <code>extends keyof</code> yet — that's Lesson 3. Just notice the naming pattern.</p>
+
+<h2>The angle bracket syntax <span class="interview-tag">interview</span></h2>
+
+<p>The angle brackets <code>&lt;T&gt;</code> declare that this function has a type parameter. They appear:</p>
+
+<pre>// 1. After the function name (declaration)
+function identity&lt;T&gt;(arg: T): T { ... }
+
+// 2. On arrow functions — slightly different placement
+const identity = &lt;T&gt;(arg: T): T =&gt; arg;
+
+// 3. Explicitly passing the type (rarely needed, but you may see it)
+identity&lt;string&gt;("hello");  // forces T = string</pre>
+
+<div class="callout">
+  <p><strong>Arrow function gotcha:</strong> In <code>.tsx</code> files, <code>&lt;T&gt;</code> at the start of an arrow function looks like JSX. TypeScript sometimes gets confused. You'll often see <code>&lt;T,&gt;</code> (with a trailing comma) to disambiguate. You don't need to memorize this for most interviews — just know it exists.</p>
+</div>
+
+<h2>What you can do with T inside the function</h2>
+
+<p>The constraint is important: inside the function, you can only use <code>T</code> in ways that work for <em>any</em> type. TypeScript will stop you if you try to use type-specific operations:</p>
+
+<pre>function identity&lt;T&gt;(arg: T): T {
+  return arg.toUpperCase(); // ❌ Error! T might not be a string
+}
+
+function identity&lt;T&gt;(arg: T): T {
+  return arg; // ✅ Works for any T
+}</pre>
+
+<p>This is the trade-off: generics give you flexibility, but only within the constraints of what all types share. You'll learn to unlock more capabilities with <code>extends</code> in the next lesson.</p>
+
+<div class="primary-source">
+  <strong>📖 Primary source for this lesson</strong>
+  <a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank">TypeScript Handbook: Generics</a> — Read the "Hello World of Generics" section. It covers exactly what we did here, from the official source. (~5 min read)
+</div>
+
+<h2>Practice in the playground</h2>
+
+<p>Before the quiz, try this in the <a href="https://www.typescriptlang.org/play" target="_blank">TypeScript Playground</a>:</p>
+
+<pre>function identity&lt;T&gt;(arg: T): T {
+  return arg;
+}
+
+const a = identity("hello");
+const b = identity(42);
+
+// Hover over 'a' and 'b' — what types does TypeScript show?</pre>
+
+<hr style="margin: 2.5rem 0; border: none; border-top: 1px solid var(--border);" />
+
+<div class="quiz" id="quiz">
+  <h3>Check your understanding</h3>
+
+  <div class="question" id="q1">
+    <p><strong>1.</strong> What does <code>T</code> represent in <code>function wrap&lt;T&gt;(val: T): T</code>?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1, this, false)">A fixed type chosen by the function author</button>
+      <button class="option" onclick="answer(1, this, true)">A type inferred from whatever argument is passed</button>
+      <button class="option" onclick="answer(1, this, false)">A shorthand for the built-in <code>unknown</code> type</button>
+      <button class="option" onclick="answer(1, this, false)">A type that must be specified explicitly every call</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p><strong>2.</strong> Why is <code>function identity(arg: any): any</code> worse than a generic version?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2, this, false)">It runs slower at runtime than a generic function</button>
+      <button class="option" onclick="answer(2, this, false)">It only works with primitive types like string and number</button>
+      <button class="option" onclick="answer(2, this, true)">The return type is <code>any</code>, losing all type information</button>
+      <button class="option" onclick="answer(2, this, false)">It causes a compile error in strict TypeScript mode</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p><strong>3.</strong> What does TypeScript infer as the type of <code>result</code> here?</p>
+    <pre style="margin:0.5rem 0 0.75rem">function wrap&lt;T&gt;(val: T): T { return val; }
+const result = wrap(99);</pre>
+    <div class="options">
+      <button class="option" onclick="answer(3, this, false)">any</button>
+      <button class="option" onclick="answer(3, this, false)">unknown</button>
+      <button class="option" onclick="answer(3, this, true)">number</button>
+      <button class="option" onclick="answer(3, this, false)">T</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p><strong>4.</strong> Which line would cause a TypeScript error inside a generic function?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4, this, false)">return arg;</button>
+      <button class="option" onclick="answer(4, this, true)">return arg.length;</button>
+      <button class="option" onclick="answer(4, this, false)">const copy = arg; return copy;</button>
+      <button class="option" onclick="answer(4, this, false)">return [arg];</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="score-area" id="score-area">
+    <p id="score-text"></p>
+  </div>
+</div>
+
+<div class="nav">
+  <p><strong>Next:</strong> <a href="0002-constraints-with-extends.html">Lesson 2 — Constraining generics with <code>extends</code></a></p>
+  <p style="margin-top:0.5rem">Have a question? <strong>Ask your teacher</strong> in the chat — that's what they're there for.</p>
+</div>
+
+<script>
+  const answers = {};
+  const correct = { 1: false, 2: false, 3: false, 4: false };
+  const total = 4;
+
+  const feedbacks = {
+    1: {
+      ok: "Exactly. T is inferred from the argument — TypeScript figures it out for you.",
+      err: "Not quite. T is determined by what you pass in — TypeScript infers it automatically."
+    },
+    2: {
+      ok: "Right. With <code>any</code>, TypeScript gives up tracking the type. You lose all autocomplete and error-checking on the result.",
+      err: "Not quite. The core problem is that <code>any</code> as a return type erases all type information downstream."
+    },
+    3: {
+      ok: "Correct. TypeScript sees you passed a number literal <code>99</code>, so T = number, so result is number.",
+      err: "Not quite. TypeScript infers T from the argument: 99 is a number, so result is number."
+    },
+    4: {
+      ok: "Right. <code>arg.length</code> only works on strings and arrays — TypeScript can't allow it on an unconstrained T.",
+      err: "Not quite. <code>arg.length</code> is the problem — T could be anything (like a boolean), which has no .length property."
+    }
+  };
+
+  function answer(qNum, btn, isCorrect) {
+    if (answers[qNum] !== undefined) return; // already answered
+    answers[qNum] = isCorrect;
+    correct[qNum] = isCorrect;
+
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => { o.disabled = true; });
+
+    if (isCorrect) {
+      btn.classList.add('correct');
+      document.getElementById('f' + qNum).innerHTML = '✓ ' + feedbacks[qNum].ok;
+      document.getElementById('f' + qNum).className = 'feedback ok';
+    } else {
+      btn.classList.add('wrong');
+      document.getElementById('f' + qNum).innerHTML = '✗ ' + feedbacks[qNum].err;
+      document.getElementById('f' + qNum).className = 'feedback err';
+      // reveal the correct answer
+      opts.forEach(o => {
+        if (o.onclick.toString().includes(', true)')) o.classList.add('reveal');
+      });
+    }
+
+    if (Object.keys(answers).length === total) showScore();
+  }
+
+  function showScore() {
+    const got = Object.values(correct).filter(Boolean).length;
+    const scoreArea = document.getElementById('score-area');
+    scoreArea.classList.add('visible');
+    const msgs = [
+      "Keep going — review the sections above and re-read the examples.",
+      "Getting there. Re-read the section on type inference and try the playground.",
+      "Solid. The concepts are landing — try the TypeScript Playground exercise above.",
+      "Excellent. You're ready for Lesson 2."
+    ];
+    document.getElementById('score-text').innerHTML =
+      `<strong>${got}/${total}</strong> — ${msgs[got - 1] || msgs[0]}`;
+  }
+</script>
+</body>
+</html>
