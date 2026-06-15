@@ -2,21 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>fullstack-dev</title>
   <style>
-    body { font-family: Georgia, serif; max-width: 600px; margin: 3rem auto; padding: 0 1.5rem; line-height: 1.7; }
-    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
-    p { color: #666; }
-    ul { margin-top: 1.5rem; }
-    li { margin-bottom: 0.5rem; }
-    a { color: #2563eb; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Georgia, serif;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #fafaf8;
+    }
+
+    header { margin-bottom: 2.5rem; }
+    h1 { font-size: clamp(1.4rem, 5vw, 1.8rem); margin-bottom: 0.2rem; }
+    .subtitle { color: #666; font-size: 0.95rem; }
+
+    h2 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #999;
+      margin-bottom: 0.75rem;
+    }
+
+    ul { list-style: none; }
+
+    li a {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      background: white;
+      border: 1px solid #e0e0d8;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #1a1a1a;
+      margin-bottom: 0.6rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    li a:hover {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px #dbeafe;
+    }
+
+    .lesson-num {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.75rem;
+      color: #999;
+      padding-top: 0.15rem;
+      flex-shrink: 0;
+    }
+
+    .lesson-title {
+      font-size: clamp(0.9rem, 3.5vw, 1rem);
+      line-height: 1.4;
+    }
+
+    .lesson-tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-family: 'SF Mono', monospace;
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      color: #92400e;
+      padding: 0.1em 0.45em;
+      border-radius: 4px;
+      margin-top: 0.3rem;
+    }
   </style>
 </head>
 <body>
-  <h1>fullstack-dev</h1>
-  <p>Learning workspace</p>
+  <header>
+    <h1>fullstack-dev</h1>
+    <p class="subtitle">Learning workspace</p>
+  </header>
+
+  <h2>TypeScript Generics</h2>
   <ul>
-    <li><a href="typescript/generics/lessons/0001-what-are-generics.html">TypeScript Generics — Lesson 1: What are generics?</a></li>
+    <li>
+      <a href="typescript/generics/lessons/0001-what-are-generics.html">
+        <span class="lesson-num">01</span>
+        <span>
+          <div class="lesson-title">What are generics, and why do they exist?</div>
+          <span class="lesson-tag">fundamentals</span>
+        </span>
+      </a>
+    </li>
   </ul>
 </body>
 </html>
