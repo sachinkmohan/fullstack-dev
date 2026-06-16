@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 7 — You might not need an Effect</title>
+  <style>
+    :root { --text:#1a1a1a; --muted:#666; --accent:#2563eb; --code-bg:#f5f5f0; --border:#e0e0d8; --correct:#16a34a; --wrong:#dc2626; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; font-size: 18px; line-height: 1.8; color: var(--text); max-width: 640px; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
+    .progress { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+    h1 { font-size: 1.65rem; margin-bottom: 0.2rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.1rem; font-weight: bold; margin: 2.25rem 0 0.6rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+    pre, code { font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 0.875rem; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; overflow-x: auto; margin: 1.1rem 0 1.4rem; line-height: 1.65; }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9rem; }
+    .box { border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.4rem 0; background: #fafaf8; }
+    .box p { margin: 0; }
+    .highlight { border-left: 3px solid var(--accent); background: #eff6ff; border-radius: 0 6px 6px 0; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.25rem 0; }
+    .puzzle { background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 1.1rem 1.3rem; margin: 1.5rem 0; }
+    .puzzle strong { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: #78350f; text-transform: uppercase; letter-spacing: 0.05em; }
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz-title { font-size: 1rem; font-weight: bold; margin-bottom: 1.5rem; }
+    .question { margin-bottom: 2rem; }
+    .question:last-child { margin-bottom: 0; }
+    .q-text { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.45rem; }
+    .option { display: block; width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 0.9rem; background: white; text-align: left; transition: background 0.12s, border-color 0.12s; }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: #14532d; font-weight: bold; }
+    .option.wrong { background: #fee2e2; border-color: var(--wrong); color: #7f1d1d; }
+    .option.reveal { background: #dcfce7; border-color: var(--correct); color: #14532d; opacity: 0.75; }
+    .feedback { font-size: 0.87rem; margin-top: 0.45rem; min-height: 1.2em; }
+    .feedback.ok { color: var(--correct); }
+    .feedback.err { color: var(--wrong); }
+    .score-area { display: none; text-align: center; padding: 0.75rem; margin-top: 1.25rem; border-top: 1px solid var(--border); }
+    .score-area.visible { display: block; }
+    .primary-source { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.9rem 1.1rem; margin: 2rem 0; font-size: 0.9rem; }
+    .primary-source strong { display: block; margin-bottom: 0.2rem; }
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+    .nav a { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 7 &nbsp;·&nbsp; React Hooks &nbsp;·&nbsp; The useEffect arc</p>
+<h1>You might not need an Effect</h1>
+<p class="meta">~6 minutes &nbsp;·&nbsp; One concept only: if no external system is involved, the effect is probably the wrong tool</p>
+
+<p>Lessons 4–6 built up <em>how</em> effects work. This one is the payoff — and the single most valuable interview page React publishes. The skill: looking at code and noticing an effect that <strong>shouldn't exist</strong>.</p>
+
+<hr />
+
+<h2>The one test that decides it</h2>
+
+<p>Recall Lesson 4: an effect synchronizes with an <em>external system</em> — the network, the DOM, a subscription, a third-party widget. So before writing any effect, ask one question:</p>
+
+<div class="box highlight">
+  <p><strong>"Is there an external system involved?" If yes — keep the effect. If no — you're just reacting to a render, and there's a better tool: compute during render, or run code in the event handler. Effects are for escaping React, not for chaining state.</strong></p>
+</div>
+
+<p>Two whole categories of effect are unnecessary, and both come straight from that test.</p>
+
+<hr />
+
+<h2>Category 1 — Transforming data for rendering</h2>
+
+<p>If a value can be computed from existing props and state, compute it <em>during render</em>. Don't mirror it into separate state and sync it with an effect.</p>
+
+<pre>// ❌ redundant state + effect
+const [fullName, setFullName] = useState('');
+useEffect(() =&gt; {
+  setFullName(first + ' ' + last);
+}, [first, last]);
+
+// ✅ just derive it
+const fullName = first + ' ' + last;</pre>
+
+<p>The effect version renders once with the stale value, then re-renders after the effect corrects it — twice the work for a value you already had. There's no external system here, so the test says: no effect.</p>
+
+<hr />
+
+<h2>Category 2 — Handling a user event</h2>
+
+<p>If code should run <em>because the user did something</em> — clicked Buy, submitted a form — it belongs in the event handler, not an effect that watches state change.</p>
+
+<pre>// ❌ effect reacting to a flag
+useEffect(() =&gt; {
+  if (submitted) showToast('Order placed!');
+}, [submitted]);
+
+// ✅ do it where the event happens
+function handleSubmit() {
+  setSubmitted(true);
+  showToast('Order placed!');
+}</pre>
+
+<p>The toast is caused by a specific interaction, not by synchronizing with the outside world. Event-specific logic goes in the event handler; only logic caused by the component <em>being shown</em> belongs in an effect.</p>
+
+<hr />
+
+<h2>The diagnostic question</h2>
+
+<p>For any effect, ask: <em>"What caused this code to run?"</em></p>
+
+<p>· Caused by the component <strong>being displayed</strong> (it needs to connect, subscribe, fetch)? → effect is right.<br />
+· Caused by a <strong>particular interaction</strong> (a click, a submit)? → event handler.<br />
+· It's just <strong>data derived</strong> from props/state? → compute during render.</p>
+
+<div class="puzzle">
+  <strong>Spot the accidental effect</strong>
+  <p>A component keeps <code>const [visibleItems, setVisibleItems]</code> and runs <code>useEffect(() =&gt; setVisibleItems(items.filter(i =&gt; i.active)), [items])</code>. Does it need the effect?</p>
+  <p style="margin-top:0.6rem">No. <code>visibleItems</code> is derived from <code>items</code> — there's no external system. Delete the state and the effect; write <code>const visibleItems = items.filter(i =&gt; i.active)</code> during render. (If the filter were expensive, you'd reach for <code>useMemo</code> — Lesson 12 — still not an effect.)</p>
+</div>
+
+<hr />
+
+<h2>Why this matters beyond interviews</h2>
+
+<p>Every unnecessary effect is a source of bugs: extra render passes, stale-closure traps, and synchronization cascades where one effect's <code>setState</code> triggers another. Removing them makes code both faster and more correct. The interview framing is just the visible tip — this is the habit that separates fragile React from solid React.</p>
+
+<hr />
+
+<h2>Why interviewers love this</h2>
+
+<p>Showing a candidate a component with a needless effect and asking "anything you'd change?" is a favorite senior-screen move. The strong answer names the test out loud: <em>"There's no external system here — <code>fullName</code> is derived from props, so I'd compute it during render and delete the state and the effect. Effects are for synchronizing with things outside React, not for reacting to other state."</em> That demonstrates the mental model from Lessons 4–6 in action, not just recited.</p>
+
+<div class="primary-source">
+  <strong>📖 Primary source</strong>
+  <a href="https://react.dev/learn/you-might-not-need-an-effect" target="_blank">React Docs — "You Might Not Need an Effect"</a>. The highest-leverage interview page on effects. Read the "How to remove unnecessary Effects" examples closely. (12 min)
+</div>
+
+<hr />
+
+<div class="quiz" id="quiz">
+  <p class="quiz-title">Check your understanding</p>
+
+  <div class="question" id="q1">
+    <p class="q-text"><strong>1.</strong> What is the single test for whether you actually need an effect?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1,this,false)">Whether the value changes more than once</button>
+      <button class="option" onclick="answer(1,this,true)">Whether an external system (network, DOM, subscription) is involved</button>
+      <button class="option" onclick="answer(1,this,false)">Whether the component re-renders frequently</button>
+      <button class="option" onclick="answer(1,this,false)">Whether the value is an object rather than a primitive</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p class="q-text"><strong>2.</strong> You have <code>fullName</code> that's always <code>first + ' ' + last</code>. What's the right approach?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2,this,false)">Store it in state and sync it with an effect on [first, last]</button>
+      <button class="option" onclick="answer(2,this,true)">Compute it during render — no state, no effect</button>
+      <button class="option" onclick="answer(2,this,false)">Put it in a ref and update it in an effect</button>
+      <button class="option" onclick="answer(2,this,false)">Wrap it in useCallback</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p class="q-text"><strong>3.</strong> A toast should appear when the user submits a form. Where does that logic belong?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3,this,false)">In an effect watching a `submitted` state flag</button>
+      <button class="option" onclick="answer(3,this,true)">In the submit event handler, alongside the state update</button>
+      <button class="option" onclick="answer(3,this,false)">In an effect with an empty dependency array</button>
+      <button class="option" onclick="answer(3,this,false)">In the cleanup function of an effect</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p class="q-text"><strong>4.</strong> The diagnostic question "what caused this code to run?" returns "the component being displayed." Which tool?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4,this,false)">An event handler</button>
+      <button class="option" onclick="answer(4,this,false)">A value computed during render</button>
+      <button class="option" onclick="answer(4,this,true)">An effect — it's synchronizing because the component is shown</button>
+      <button class="option" onclick="answer(4,this,false)">A useMemo</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="score-area" id="score-area"><p id="score-text"></p></div>
+</div>
+
+<div class="nav">
+  <p>Something still unclear? <strong>Ask your teacher in the chat</strong>. Next: <code>useRef</code> — the deliberate escape hatch from the snapshot model.</p>
+  <p style="margin-top:0.5rem">← <a href="0006-cleanup-and-strict-mode.html">Lesson 6</a> &nbsp; · &nbsp; <a href="../../../index.html">Home</a> &nbsp; · &nbsp; <a href="0008-useref-the-escape-hatch.html">Lesson 8</a> →</p>
+</div>
+
+<script>
+  const answered = {}, results = {};
+  const feedback = {
+    1: { ok: "Right. No external system means no effect — you're just reacting to a render, which render or handlers do better.",
+         err: "Not quite. The deciding test is whether an external system is involved. Without one, an effect is the wrong tool." },
+    2: { ok: "Exactly. It's derived data — compute it during render and delete both the state and the effect.",
+         err: "Not quite. fullName is derivable from props, so there's no external system: just compute it during render." },
+    3: { ok: "Right. It's caused by a specific interaction, so it belongs in the event handler, not an effect.",
+         err: "Not quite. A toast caused by a submit is event logic — put it in the handler, not an effect watching a flag." },
+    4: { ok: "Yes. Logic caused by the component being displayed (connect, subscribe, fetch) is exactly what effects are for.",
+         err: "Not quite. 'Caused by being displayed' is the one case that IS an effect — it's synchronizing while shown." },
+  };
+  function answer(q, btn, isCorrect) {
+    if (answered[q]) return; answered[q] = true; results[q] = isCorrect;
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => o.disabled = true);
+    if (isCorrect) { btn.classList.add('correct'); document.getElementById('f' + q).innerHTML = '✓ ' + feedback[q].ok; document.getElementById('f' + q).className = 'feedback ok'; }
+    else { btn.classList.add('wrong'); document.getElementById('f' + q).innerHTML = '✗ ' + feedback[q].err; document.getElementById('f' + q).className = 'feedback err';
+      opts.forEach(o => { if (o.getAttribute('onclick').includes(', true)')) o.classList.add('reveal'); }); }
+    if (Object.keys(answered).length === 4) showScore();
+  }
+  function showScore() {
+    const got = Object.values(results).filter(Boolean).length;
+    const msg = ["Let's go over this together — start from the one test.",
+      "Close. Re-read 'The diagnostic question'.",
+      "Solid. Review the one you missed, then move to Lesson 8.",
+      "You've got it. You can now spot an accidental effect on sight."][got - 1];
+    const area = document.getElementById('score-area');
+    document.getElementById('score-text').innerHTML = `<strong>${got}/4</strong> — ${msg}`;
+    area.classList.add('visible');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 5 — The dependency array</title>
+  <style>
+    :root { --text:#1a1a1a; --muted:#666; --accent:#2563eb; --code-bg:#f5f5f0; --border:#e0e0d8; --correct:#16a34a; --wrong:#dc2626; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; font-size: 18px; line-height: 1.8; color: var(--text); max-width: 640px; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
+    .progress { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+    h1 { font-size: 1.65rem; margin-bottom: 0.2rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.1rem; font-weight: bold; margin: 2.25rem 0 0.6rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+    pre, code { font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 0.875rem; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; overflow-x: auto; margin: 1.1rem 0 1.4rem; line-height: 1.65; }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9rem; }
+    .box { border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.4rem 0; background: #fafaf8; }
+    .box p { margin: 0; }
+    .highlight { border-left: 3px solid var(--accent); background: #eff6ff; border-radius: 0 6px 6px 0; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.25rem 0; }
+    .puzzle { background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 1.1rem 1.3rem; margin: 1.5rem 0; }
+    .puzzle strong { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: #78350f; text-transform: uppercase; letter-spacing: 0.05em; }
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz-title { font-size: 1rem; font-weight: bold; margin-bottom: 1.5rem; }
+    .question { margin-bottom: 2rem; }
+    .question:last-child { margin-bottom: 0; }
+    .q-text { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.45rem; }
+    .option { display: block; width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 0.9rem; background: white; text-align: left; transition: background 0.12s, border-color 0.12s; }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: #14532d; font-weight: bold; }
+    .option.wrong { background: #fee2e2; border-color: var(--wrong); color: #7f1d1d; }
+    .option.reveal { background: #dcfce7; border-color: var(--correct); color: #14532d; opacity: 0.75; }
+    .feedback { font-size: 0.87rem; margin-top: 0.45rem; min-height: 1.2em; }
+    .feedback.ok { color: var(--correct); }
+    .feedback.err { color: var(--wrong); }
+    .score-area { display: none; text-align: center; padding: 0.75rem; margin-top: 1.25rem; border-top: 1px solid var(--border); }
+    .score-area.visible { display: block; }
+    .primary-source { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.9rem 1.1rem; margin: 2rem 0; font-size: 0.9rem; }
+    .primary-source strong { display: block; margin-bottom: 0.2rem; }
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+    .nav a { color: var(--accent); }
+    /* lesson-specific: dep-array diff visual */
+    .diff { margin: 1.5rem 0; font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 0.8rem; }
+    .diff-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.55rem; flex-wrap: wrap; }
+    .diff-label { color: var(--muted); width: 4.5rem; flex-shrink: 0; text-align: right; }
+    .cell { padding: 0.3rem 0.6rem; border: 1px solid var(--border); border-radius: 5px; background: white; }
+    .cell.same { background: #dcfce7; border-color: var(--correct); color: #14532d; }
+    .cell.diff { background: #fee2e2; border-color: var(--wrong); color: #7f1d1d; }
+    .diff-verdict { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+    .diff-verdict b.skip { color: var(--muted); }
+    .diff-verdict b.rerun { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 5 &nbsp;·&nbsp; React Hooks &nbsp;·&nbsp; The useEffect arc</p>
+<h1>The dependency array</h1>
+<p class="meta">~6 minutes &nbsp;·&nbsp; One concept only: the dep array is a list of values React compares to decide whether to re-sync</p>
+
+<p>Lesson 4 reframed an effect as <em>synchronization with an external system</em>. This lesson answers the natural next question: how does React decide <em>when</em> the external thing has drifted and needs re-syncing? The answer is the second argument — the dependency array.</p>
+
+<hr />
+
+<h2>What React actually does</h2>
+
+<p>After every render, before running an effect, React performs one tiny check: it compares this render's dependency array against the previous render's, value by value, using <code>Object.is</code>. If every value is the same, it <strong>skips</strong> the effect. If any value differs, it runs cleanup (if any) and then runs the effect again.</p>
+
+<div class="diff">
+  <div class="diff-row">
+    <span class="diff-label">prev</span>
+    <span class="cell">'general'</span>
+    <span class="cell">42</span>
+  </div>
+  <div class="diff-row">
+    <span class="diff-label">next</span>
+    <span class="cell same">'general'</span>
+    <span class="cell same">42</span>
+  </div>
+  <p class="diff-verdict">All equal → <b class="skip">skip the effect</b></p>
+</div>
+
+<div class="diff">
+  <div class="diff-row">
+    <span class="diff-label">prev</span>
+    <span class="cell">'general'</span>
+    <span class="cell">42</span>
+  </div>
+  <div class="diff-row">
+    <span class="diff-label">next</span>
+    <span class="cell diff">'random'</span>
+    <span class="cell same">42</span>
+  </div>
+  <p class="diff-verdict">One differs → <b class="rerun">cleanup, then re-run the effect</b></p>
+</div>
+
+<hr />
+
+<h2>The one thing to remember</h2>
+
+<div class="box highlight">
+  <p><strong>The dependency array is not a list of "things that trigger the effect." It's a list of every reactive value the effect <em>reads</em> — so React can tell whether those values changed since last time. You don't choose what goes in it; the effect's body does.</strong></p>
+</div>
+
+<hr />
+
+<h2>The three signatures</h2>
+
+<pre>useEffect(fn);          // no array → runs after EVERY render
+useEffect(fn, []);      // empty → runs once (nothing to drift)
+useEffect(fn, [a, b]);  // runs when a or b changes since last render</pre>
+
+<p>Notice that all three are the same rule. With no array there's nothing to compare, so the check always "fails" and it runs every time. With <code>[]</code> there's an empty list that's always equal to itself, so it runs once and never re-syncs. The bracket list is just the general case.</p>
+
+<hr />
+
+<h2>Why the linter is strict</h2>
+
+<p>The <code>react-hooks/exhaustive-deps</code> rule insists that every reactive value the effect reads — props, state, or anything derived from them — appears in the array. People fight this rule by deleting deps to "make it run less." That's the bug, not the fix.</p>
+
+<p>Remember Lesson 2: each render has its own frozen variables. If your effect reads <code>roomId</code> but you omit it from the deps, the effect keeps the <code>roomId</code> from the render where it last ran — a stale closure. The room changes, your connection doesn't. The linter is protecting you from exactly that.</p>
+
+<div class="puzzle">
+  <strong>Predict the bug</strong>
+  <p>An effect subscribes using <code>userId</code>, but the array is <code>[]</code>. The user logs out and a different user logs in. What does the subscription do?</p>
+  <p style="margin-top:0.6rem">It stays subscribed as the <em>old</em> user forever — <code>[]</code> told React "this never depends on anything," so it never re-syncs. The fix isn't to silence the linter; it's <code>[userId]</code>.</p>
+</div>
+
+<hr />
+
+<h2>The mental model</h2>
+
+<p>Think of the dep array as React asking: <em>"Is anything this effect cares about different from last time?"</em> Your only job is to answer honestly — list everything the effect reads. If re-running too often is the problem, the real fix is to change <em>what the effect depends on</em> (Lessons 7, 11–13), not to lie in the array.</p>
+
+<hr />
+
+<h2>Why interviewers love this</h2>
+
+<p>"Why does the linter want me to add this dependency?" is a daily-life question that doubles as a senior signal. The weak answer is "to avoid warnings." The strong answer connects it to the snapshot model: <em>"each render closes over its own values; an omitted dependency means the effect runs with stale ones, so the dep array is how React knows the captured values are still current."</em> The classic follow-up — "what if adding the dep makes it loop?" — sets up Lessons 11–13 on referential equality.</p>
+
+<div class="primary-source">
+  <strong>📖 Primary source</strong>
+  <a href="https://react.dev/learn/synchronizing-with-effects#step-2-specify-the-effect-dependencies" target="_blank">React Docs — "Specify the Effect dependencies"</a>. Walks through the exact compare-and-skip behavior, including why you can't "choose" your dependencies. (6 min)
+</div>
+
+<hr />
+
+<div class="quiz" id="quiz">
+  <p class="quiz-title">Check your understanding</p>
+
+  <div class="question" id="q1">
+    <p class="q-text"><strong>1.</strong> What does React do with the dependency array before running an effect?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1,this,false)">Runs each dependency as a function to see if it returns true</button>
+      <button class="option" onclick="answer(1,this,true)">Compares each value to the previous render's with Object.is, and skips the effect if all are equal</button>
+      <button class="option" onclick="answer(1,this,false)">Watches the values continuously and fires the moment one changes</button>
+      <button class="option" onclick="answer(1,this,false)">Deep-compares the values, recursing into objects and arrays</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p class="q-text"><strong>2.</strong> Which values belong in the dependency array?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2,this,false)">Whichever values you want the effect to react to</button>
+      <button class="option" onclick="answer(2,this,false)">Only props, never state</button>
+      <button class="option" onclick="answer(2,this,true)">Every reactive value the effect's body reads (props, state, and things derived from them)</button>
+      <button class="option" onclick="answer(2,this,false)">Only values that are objects or functions</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p class="q-text"><strong>3.</strong> An effect reads <code>roomId</code> but the dependency array is <code>[]</code>. The room changes. What goes wrong?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3,this,false)">React throws an error about a missing dependency</button>
+      <button class="option" onclick="answer(3,this,true)">The effect keeps using the old roomId from a stale closure and never re-syncs</button>
+      <button class="option" onclick="answer(3,this,false)">The effect runs twice as fast to catch up</button>
+      <button class="option" onclick="answer(3,this,false)">Nothing — an empty array makes the effect always re-run</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p class="q-text"><strong>4.</strong> Your effect re-runs too often after you add a required dependency. What's the right fix?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4,this,false)">Delete the dependency and disable the lint rule</button>
+      <button class="option" onclick="answer(4,this,true)">Change what the effect depends on, so the value is stable or no longer read</button>
+      <button class="option" onclick="answer(4,this,false)">Remove the dependency array entirely</button>
+      <button class="option" onclick="answer(4,this,false)">Wrap the whole effect in a setTimeout</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="score-area" id="score-area"><p id="score-text"></p></div>
+</div>
+
+<div class="nav">
+  <p>Something still unclear? <strong>Ask your teacher in the chat</strong>. Next: cleanup functions and why your fetch fires twice in Strict Mode.</p>
+  <p style="margin-top:0.5rem">← <a href="0004-effects-as-synchronization.html">Lesson 4</a> &nbsp; · &nbsp; <a href="../../../index.html">Home</a> &nbsp; · &nbsp; <a href="0006-cleanup-and-strict-mode.html">Lesson 6</a> →</p>
+</div>
+
+<script>
+  const answered = {}, results = {};
+  const feedback = {
+    1: { ok: "Right. It's a shallow Object.is comparison against the previous array — all equal means skip.",
+         err: "Not quite. React shallow-compares each value to last render's with Object.is; if all match, it skips the effect." },
+    2: { ok: "Exactly. The body decides — every reactive value it reads must be listed. You don't get to pick.",
+         err: "Not quite. It's not your preference: it's every reactive value the effect reads, so React can detect staleness." },
+    3: { ok: "Yes. The empty array froze roomId at its first value — a stale closure that never re-syncs.",
+         err: "Not quite. [] tells React nothing changes, so the effect keeps the old roomId from its closure and never re-runs." },
+    4: { ok: "Right. The fix is upstream — make the value stable or stop reading it — never lie in the array.",
+         err: "Not quite. Deleting a real dependency reintroduces the stale-closure bug. Fix what the effect depends on instead." },
+  };
+  function answer(q, btn, isCorrect) {
+    if (answered[q]) return; answered[q] = true; results[q] = isCorrect;
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => o.disabled = true);
+    if (isCorrect) { btn.classList.add('correct'); document.getElementById('f' + q).innerHTML = '✓ ' + feedback[q].ok; document.getElementById('f' + q).className = 'feedback ok'; }
+    else { btn.classList.add('wrong'); document.getElementById('f' + q).innerHTML = '✗ ' + feedback[q].err; document.getElementById('f' + q).className = 'feedback err';
+      opts.forEach(o => { if (o.getAttribute('onclick').includes(', true)')) o.classList.add('reveal'); }); }
+    if (Object.keys(answered).length === 4) showScore();
+  }
+  function showScore() {
+    const got = Object.values(results).filter(Boolean).length;
+    const msg = ["Let's go over this together — start from the compare-and-skip diff.",
+      "Close. Re-read 'Why the linter is strict'.",
+      "Solid. Review the one you missed, then move to Lesson 6.",
+      "You've got it. The dep array is now a comparison, not a trigger list."][got - 1];
+    const area = document.getElementById('score-area');
+    document.getElementById('score-text').innerHTML = `<strong>${got}/4</strong> — ${msg}`;
+    area.classList.add('visible');
+  }
+</script>
+</body>
+</html>

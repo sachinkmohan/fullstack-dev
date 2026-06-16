@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 6 — Cleanup &amp; Strict Mode</title>
+  <style>
+    :root { --text:#1a1a1a; --muted:#666; --accent:#2563eb; --code-bg:#f5f5f0; --border:#e0e0d8; --correct:#16a34a; --wrong:#dc2626; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; font-size: 18px; line-height: 1.8; color: var(--text); max-width: 640px; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
+    .progress { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+    h1 { font-size: 1.65rem; margin-bottom: 0.2rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.1rem; font-weight: bold; margin: 2.25rem 0 0.6rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+    pre, code { font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 0.875rem; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; overflow-x: auto; margin: 1.1rem 0 1.4rem; line-height: 1.65; }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9rem; }
+    .box { border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.4rem 0; background: #fafaf8; }
+    .box p { margin: 0; }
+    .highlight { border-left: 3px solid var(--accent); background: #eff6ff; border-radius: 0 6px 6px 0; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.25rem 0; }
+    .puzzle { background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 1.1rem 1.3rem; margin: 1.5rem 0; }
+    .puzzle strong { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: #78350f; text-transform: uppercase; letter-spacing: 0.05em; }
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz-title { font-size: 1rem; font-weight: bold; margin-bottom: 1.5rem; }
+    .question { margin-bottom: 2rem; }
+    .question:last-child { margin-bottom: 0; }
+    .q-text { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.45rem; }
+    .option { display: block; width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 0.9rem; background: white; text-align: left; transition: background 0.12s, border-color 0.12s; }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: #14532d; font-weight: bold; }
+    .option.wrong { background: #fee2e2; border-color: var(--wrong); color: #7f1d1d; }
+    .option.reveal { background: #dcfce7; border-color: var(--correct); color: #14532d; opacity: 0.75; }
+    .feedback { font-size: 0.87rem; margin-top: 0.45rem; min-height: 1.2em; }
+    .feedback.ok { color: var(--correct); }
+    .feedback.err { color: var(--wrong); }
+    .score-area { display: none; text-align: center; padding: 0.75rem; margin-top: 1.25rem; border-top: 1px solid var(--border); }
+    .score-area.visible { display: block; }
+    .primary-source { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.9rem 1.1rem; margin: 2rem 0; font-size: 0.9rem; }
+    .primary-source strong { display: block; margin-bottom: 0.2rem; }
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+    .nav a { color: var(--accent); }
+    /* lesson-specific: Strict Mode timeline */
+    .timeline { margin: 1.5rem 0; font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 0.8rem; }
+    .tl-cap { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.7rem; font-family: Georgia, serif; font-style: italic; }
+    .tl-step { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
+    .tl-dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; flex-shrink: 0; }
+    .tl-dot.setup { background: var(--accent); }
+    .tl-dot.cleanup { background: var(--wrong); }
+    .tl-pill { padding: 0.25rem 0.6rem; border-radius: 5px; border: 1px solid var(--border); background: white; }
+    .tl-pill.setup { color: var(--accent); border-color: #bfdbfe; background: #eff6ff; }
+    .tl-pill.cleanup { color: var(--wrong); border-color: #fecaca; background: #fef2f2; }
+    .tl-note { color: var(--muted); font-family: Georgia, serif; }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 6 &nbsp;·&nbsp; React Hooks &nbsp;·&nbsp; The useEffect arc</p>
+<h1>Cleanup &amp; Strict Mode</h1>
+<p class="meta">~6 minutes &nbsp;·&nbsp; One concept only: cleanup undoes an effect, and Strict Mode runs setup→cleanup→setup to prove it</p>
+
+<p>Lessons 4 and 5 covered <em>what</em> an effect syncs and <em>when</em> it re-syncs. This lesson is the other half of synchronization: the <strong>cleanup function</strong> — how an effect <em>stops</em> syncing. And it answers the question every React beginner eventually Googles: "why does my fetch run twice?"</p>
+
+<hr />
+
+<h2>The setup needs an undo</h2>
+
+<p>If an effect opens a connection, something must close it. If it adds an event listener, something must remove it. If it starts a timer, something must clear it. That "undo" is the function you <code>return</code> from the effect:</p>
+
+<pre>useEffect(() =&gt; {
+  const conn = createConnection(roomId);
+  conn.connect();                      // setup
+  return () =&gt; conn.disconnect();      // cleanup — the undo
+}, [roomId]);</pre>
+
+<p>React calls the cleanup in two situations: before re-running the effect (because a dependency changed), and when the component unmounts. Every setup is eventually paired with exactly one cleanup.</p>
+
+<hr />
+
+<h2>The one thing to remember</h2>
+
+<div class="box highlight">
+  <p><strong>Cleanup isn't "code that runs on unmount." It's the inverse of your setup — it must fully undo whatever the setup did, so that running setup then cleanup leaves the world exactly as it started. Write the cleanup as the mirror image of the setup.</strong></p>
+</div>
+
+<hr />
+
+<h2>Why your fetch runs twice</h2>
+
+<p>In development, React's <strong>Strict Mode</strong> deliberately mounts each component, immediately unmounts it, then mounts it again. For your effect that means: <em>setup → cleanup → setup</em>. You see the effect run twice and panic.</p>
+
+<div class="timeline">
+  <p class="tl-cap">What Strict Mode does to one effect in development:</p>
+  <div class="tl-step"><span class="tl-dot setup"></span><span class="tl-pill setup">setup</span><span class="tl-note">effect runs — connection opens</span></div>
+  <div class="tl-step"><span class="tl-dot cleanup"></span><span class="tl-pill cleanup">cleanup</span><span class="tl-note">React immediately tears it down</span></div>
+  <div class="tl-step"><span class="tl-dot setup"></span><span class="tl-pill setup">setup</span><span class="tl-note">effect runs again — the real one</span></div>
+</div>
+
+<p>This is not a bug and it does not happen in production. It's a <strong>test</strong>: if your effect survives an immediate setup→cleanup→setup with no leftover damage — no duplicate connection, no doubled-up listener — then your cleanup is correct. If running it twice breaks something, your cleanup is missing or wrong. Strict Mode is surfacing a real bug early, not creating one.</p>
+
+<hr />
+
+<h2>The fetch case, specifically</h2>
+
+<p>A fetch with no cleanup fires twice and you might get two responses landing out of order, the later one stomped by the earlier. The cleanup is an <code>ignore</code> flag (or an <code>AbortController</code>):</p>
+
+<pre>useEffect(() =&gt; {
+  let ignore = false;
+  fetchUser(userId).then(u =&gt; { if (!ignore) setUser(u); });
+  return () =&gt; { ignore = true; };   // discard the stale response
+}, [userId]);</pre>
+
+<p>Now even if two requests fly, the first one's result is ignored once its cleanup runs. The double-fire stops being scary the moment the cleanup makes it harmless.</p>
+
+<div class="puzzle">
+  <strong>Predict the behavior</strong>
+  <p>An effect calls <code>window.addEventListener('resize', onResize)</code> and returns no cleanup. In Strict Mode, how many listeners are attached after the initial mount settles?</p>
+  <p style="margin-top:0.6rem">Two — setup ran twice with nothing removing the first. Every resize now fires <code>onResize</code> twice. The missing cleanup, <code>removeEventListener</code>, is the whole bug; Strict Mode just made it visible.</p>
+</div>
+
+<hr />
+
+<h2>Why interviewers love this</h2>
+
+<p>"Why does an effect run twice in development?" is an extremely common screening question because the weak answer ("Strict Mode is buggy / I disable it") and the strong answer are miles apart. The strong answer: <em>"Strict Mode double-invokes effects to verify my cleanup fully reverses my setup; if running setup→cleanup→setup leaves damage, my cleanup is wrong. It's a correctness check, and it doesn't run in production."</em> That single sentence shows you understand cleanup as the inverse of setup, not as an unmount hook.</p>
+
+<div class="primary-source">
+  <strong>📖 Primary source</strong>
+  <a href="https://react.dev/learn/synchronizing-with-effects#how-to-handle-the-effect-firing-twice-in-development" target="_blank">React Docs — "How to handle the Effect firing twice in development"</a>. The connection and fetch examples this lesson is built on, with the Strict Mode rationale. (7 min)
+</div>
+
+<hr />
+
+<div class="quiz" id="quiz">
+  <p class="quiz-title">Check your understanding</p>
+
+  <div class="question" id="q1">
+    <p class="q-text"><strong>1.</strong> What is the function you <code>return</code> from an effect supposed to do?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1,this,false)">Run only when the component unmounts</button>
+      <button class="option" onclick="answer(1,this,true)">Fully undo whatever the setup did, leaving the world as it started</button>
+      <button class="option" onclick="answer(1,this,false)">Return the effect's result to the component</button>
+      <button class="option" onclick="answer(1,this,false)">Delay the effect until after the next render</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p class="q-text"><strong>2.</strong> In Strict Mode (development), what sequence does React run for an effect on initial mount?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2,this,false)">setup → setup (twice, no cleanup between)</button>
+      <button class="option" onclick="answer(2,this,true)">setup → cleanup → setup</button>
+      <button class="option" onclick="answer(2,this,false)">cleanup → setup</button>
+      <button class="option" onclick="answer(2,this,false)">setup only, the same as production</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p class="q-text"><strong>3.</strong> What is Strict Mode's double-invocation actually checking?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3,this,false)">That your component renders fast enough</button>
+      <button class="option" onclick="answer(3,this,true)">That your cleanup fully reverses your setup, so an immediate re-sync leaves no damage</button>
+      <button class="option" onclick="answer(3,this,false)">That your dependency array is sorted correctly</button>
+      <button class="option" onclick="answer(3,this,false)">That the effect returns a value</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p class="q-text"><strong>4.</strong> A data-fetching effect fires twice and responses race. What's the idiomatic cleanup?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4,this,false)">Wrap the fetch in a setTimeout so the second one is delayed</button>
+      <button class="option" onclick="answer(4,this,false)">Disable Strict Mode so it only fires once</button>
+      <button class="option" onclick="answer(4,this,true)">Set an ignore flag (or abort) in the cleanup so a stale response is discarded</button>
+      <button class="option" onclick="answer(4,this,false)">Move the fetch out of the effect into the render body</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="score-area" id="score-area"><p id="score-text"></p></div>
+</div>
+
+<div class="nav">
+  <p>Something still unclear? <strong>Ask your teacher in the chat</strong>. Next: the patterns where you don't need an effect at all.</p>
+  <p style="margin-top:0.5rem">← <a href="0005-dependency-array.html">Lesson 5</a> &nbsp; · &nbsp; <a href="../../../index.html">Home</a> &nbsp; · &nbsp; <a href="0007-you-might-not-need-an-effect.html">Lesson 7</a> →</p>
+</div>
+
+<script>
+  const answered = {}, results = {};
+  const feedback = {
+    1: { ok: "Right. Cleanup is the mirror of setup — it undoes it so setup-then-cleanup is a no-op.",
+         err: "Not quite. Cleanup runs before every re-run AND on unmount; its job is to fully undo the setup, not just fire on unmount." },
+    2: { ok: "Yes. Strict Mode mounts, immediately unmounts, then mounts again: setup → cleanup → setup.",
+         err: "Not quite. Strict Mode runs setup, then cleanup, then setup again — it always cleans up between the two setups." },
+    3: { ok: "Exactly. If an immediate setup→cleanup→setup leaves leftover damage, your cleanup is missing or wrong.",
+         err: "Not quite. The double-invoke is a correctness probe: does your cleanup reverse your setup with no residue?" },
+    4: { ok: "Right. An ignore flag or AbortController in the cleanup discards the stale response — the double-fire becomes harmless.",
+         err: "Not quite. The fix is cleanup that discards the stale response (ignore flag / abort), not delaying or disabling Strict Mode." },
+  };
+  function answer(q, btn, isCorrect) {
+    if (answered[q]) return; answered[q] = true; results[q] = isCorrect;
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => o.disabled = true);
+    if (isCorrect) { btn.classList.add('correct'); document.getElementById('f' + q).innerHTML = '✓ ' + feedback[q].ok; document.getElementById('f' + q).className = 'feedback ok'; }
+    else { btn.classList.add('wrong'); document.getElementById('f' + q).innerHTML = '✗ ' + feedback[q].err; document.getElementById('f' + q).className = 'feedback err';
+      opts.forEach(o => { if (o.getAttribute('onclick').includes(', true)')) o.classList.add('reveal'); }); }
+    if (Object.keys(answered).length === 4) showScore();
+  }
+  function showScore() {
+    const got = Object.values(results).filter(Boolean).length;
+    const msg = ["Let's go over this together — start from the setup→cleanup→setup timeline.",
+      "Close. Re-read 'Why your fetch runs twice'.",
+      "Solid. Review the one you missed, then move to Lesson 7.",
+      "You've got it. Cleanup is the inverse of setup, and Strict Mode is a friend."][got - 1];
+    const area = document.getElementById('score-area');
+    document.getElementById('score-text').innerHTML = `<strong>${got}/4</strong> — ${msg}`;
+    area.classList.add('visible');
+  }
+</script>
+</body>
+</html>

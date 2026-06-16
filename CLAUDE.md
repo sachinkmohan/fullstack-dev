@@ -11,6 +11,8 @@ Personal learning monorepo. Each top-level topic folder (`typescript/generics`, 
 - Tag the first lesson of a topic with `<span class="lesson-tag">start here</span>`. Use `supplementary` for off-the-main-path lessons. No tag for the rest.
 - Order lessons by intended reading order, not file name.
 
+Conversely, every lesson must link *back* to the portal: include a `Home` link to `index.html` (relative path `../../../index.html` from a `topic/section/lessons/` file) in the lesson's bottom nav line, sitting between the prev and next links (e.g. `← Lesson 7 · Home · Lesson 9 →`). For the first or last lesson, `Home` simply sits next to the single neighbor.
+
 ## When invoked at the root
 
 If asked to set up a new topic, create a new top-level folder following the `/teach` skill convention — then add a corresponding section to `index.html`. Don't add a CLAUDE.md inside the topic folder; per-workspace context belongs in `MISSION.md` and `NOTES.md`.

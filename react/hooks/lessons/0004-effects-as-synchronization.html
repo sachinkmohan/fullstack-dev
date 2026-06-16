@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 4 — Effects as synchronization</title>
+  <style>
+    :root { --text:#1a1a1a; --muted:#666; --accent:#2563eb; --code-bg:#f5f5f0; --border:#e0e0d8; --correct:#16a34a; --wrong:#dc2626; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; font-size: 18px; line-height: 1.8; color: var(--text); max-width: 640px; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
+    .progress { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+    h1 { font-size: 1.65rem; margin-bottom: 0.2rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.1rem; font-weight: bold; margin: 2.25rem 0 0.6rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+    pre, code { font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 0.875rem; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; overflow-x: auto; margin: 1.1rem 0 1.4rem; line-height: 1.65; }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9rem; }
+    .box { border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.4rem 0; background: #fafaf8; }
+    .box p { margin: 0; }
+    .highlight { border-left: 3px solid var(--accent); background: #eff6ff; border-radius: 0 6px 6px 0; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.25rem 0; }
+    .puzzle { background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 1.1rem 1.3rem; margin: 1.5rem 0; }
+    .puzzle strong { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: #78350f; text-transform: uppercase; letter-spacing: 0.05em; }
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz-title { font-size: 1rem; font-weight: bold; margin-bottom: 1.5rem; }
+    .question { margin-bottom: 2rem; }
+    .question:last-child { margin-bottom: 0; }
+    .q-text { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.45rem; }
+    .option { display: block; width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 0.9rem; background: white; text-align: left; transition: background 0.12s, border-color 0.12s; }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: #14532d; font-weight: bold; }
+    .option.wrong { background: #fee2e2; border-color: var(--wrong); color: #7f1d1d; }
+    .option.reveal { background: #dcfce7; border-color: var(--correct); color: #14532d; opacity: 0.75; }
+    .feedback { font-size: 0.87rem; margin-top: 0.45rem; min-height: 1.2em; }
+    .feedback.ok { color: var(--correct); }
+    .feedback.err { color: var(--wrong); }
+    .score-area { display: none; text-align: center; padding: 0.75rem; margin-top: 1.25rem; border-top: 1px solid var(--border); }
+    .score-area.visible { display: block; }
+    .primary-source { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.9rem 1.1rem; margin: 2rem 0; font-size: 0.9rem; }
+    .primary-source strong { display: block; margin-bottom: 0.2rem; }
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+    .nav a { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 4 &nbsp;·&nbsp; React Hooks &nbsp;·&nbsp; The useEffect arc</p>
+<h1>Effects as synchronization</h1>
+<p class="meta">~5 minutes &nbsp;·&nbsp; One concept only: an effect synchronizes with an external system — it is not a lifecycle event</p>
+
+<p>You've shipped <code>useEffect</code> already. This lesson doesn't teach the syntax — it replaces the <em>mental model</em> most people carry into it. That model is the single biggest source of effect bugs, and the single most common interview tell.</p>
+
+<hr />
+
+<h2>Start with a thermostat</h2>
+
+<p>A thermostat has one job: keep the room matching the number on the dial. It doesn't care <em>when</em> you set the dial, how many times you've touched it, or what the last value was. It only cares about one thing — <strong>does the room currently match the target?</strong> If not, it acts until it does.</p>
+
+<p>It doesn't run "on mount." It doesn't run "on update." It runs <em>whenever reality has drifted from the target</em>, and stops when they agree.</p>
+
+<hr />
+
+<h2>The old model, and why it misleads</h2>
+
+<p>Most people learn effects as a translation table from class components:</p>
+
+<pre>componentDidMount    →  useEffect(fn, [])
+componentDidUpdate   →  useEffect(fn, [deps])
+componentWillUnmount →  useEffect(() =&gt; cleanup, [])</pre>
+
+<p>This works often enough to feel right, which is exactly the trap. It frames an effect as <em>"code that fires at a moment in the component's life."</em> So you start asking the wrong question: <em>"when does this run?"</em> — and you reach for an effect any time you want something to happen "after render."</p>
+
+<hr />
+
+<h2>The one thing to remember</h2>
+
+<div class="box highlight">
+  <p><strong>An effect doesn't run <em>at a moment</em>. It keeps something <em>outside</em> React — a subscription, a connection, the document title, a timer — in sync with the props and state inside React. Ask not "when does this fire?" but "what am I keeping in sync, and with what?"</strong></p>
+</div>
+
+<hr />
+
+<h2>What "external system" means</h2>
+
+<p>An external system is anything React doesn't control: the browser, the network, a third-party widget, a websocket. If you're touching one of those <em>from</em> React state, that's a synchronization job:</p>
+
+<pre>useEffect(() =&gt; {
+  const conn = createConnection(roomId); // sync TO this external thing
+  conn.connect();
+  return () =&gt; conn.disconnect();
+}, [roomId]);                            // ...FROM this React value</pre>
+
+<p>Read it as: "keep an open connection that matches <code>roomId</code>." When <code>roomId</code> changes, the old connection no longer matches the target, so React tears it down and opens a new one. Same thermostat, new dial setting.</p>
+
+<hr />
+
+<h2>The reframed question</h2>
+
+<p>The lifecycle model asks <em>"do I want this to happen on mount, or on update, or both?"</em> The synchronization model asks two better questions:</p>
+
+<p>· <strong>What external thing am I keeping in sync?</strong> (the connection, the title, the subscription)<br />
+· <strong>Which React values does it depend on?</strong> (those become the dependency array — Lesson 5)</p>
+
+<p>Answer those two, and the effect almost writes itself. If you <em>can't</em> name an external system, that's a strong hint you don't need an effect at all — which is Lesson 7.</p>
+
+<hr />
+
+<h2>Why interviewers love this</h2>
+
+<p>"Walk me through <code>useEffect</code>" is a near-guaranteed question, and most candidates recite the lifecycle table. If you instead say <em>"an effect synchronizes a React-external system with my props and state; I think about what I'm syncing and what it depends on, not about mount vs update"</em> — you've signalled senior-level understanding in one sentence. The classic follow-up is "so when should you <em>not</em> use an effect?" — and now you have a principled answer: when nothing external is being synchronized.</p>
+
+<div class="primary-source">
+  <strong>📖 Primary source</strong>
+  <a href="https://react.dev/learn/synchronizing-with-effects" target="_blank">React Docs — "Synchronizing with Effects"</a>. The page this lesson is built on. Read the intro and "How to write an Effect" — the rest lands in Lessons 5 &amp; 6. (8 min)
+</div>
+
+<hr />
+
+<div class="quiz" id="quiz">
+  <p class="quiz-title">Check your understanding</p>
+
+  <div class="question" id="q1">
+    <p class="q-text"><strong>1.</strong> According to the synchronization model, what is an effect's actual job?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1,this,false)">To run code at a specific moment in the component's lifecycle</button>
+      <button class="option" onclick="answer(1,this,true)">To keep an external system in sync with React props and state</button>
+      <button class="option" onclick="answer(1,this,false)">To replace componentDidMount in function components</button>
+      <button class="option" onclick="answer(1,this,false)">To defer work until after the browser has painted</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p class="q-text"><strong>2.</strong> Why is the "componentDidMount → useEffect(fn, [])" mental model considered a trap?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2,this,false)">It produces code that never runs on the first render</button>
+      <button class="option" onclick="answer(2,this,true)">It frames effects as moments in time, leading you to ask "when does this fire?" instead of "what am I syncing?"</button>
+      <button class="option" onclick="answer(2,this,false)">It is deprecated and removed in recent React versions</button>
+      <button class="option" onclick="answer(2,this,false)">It only works for class components, not function components</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p class="q-text"><strong>3.</strong> In <code>useEffect(() =&gt; { conn.connect(); return () =&gt; conn.disconnect(); }, [roomId])</code>, what happens when <code>roomId</code> changes?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3,this,false)">Nothing — the effect only runs once on mount</button>
+      <button class="option" onclick="answer(3,this,false)">A second connection opens alongside the first</button>
+      <button class="option" onclick="answer(3,this,true)">The old connection is torn down and a new one opens, so the connection matches the new roomId</button>
+      <button class="option" onclick="answer(3,this,false)">React throws because dependencies cannot change</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p class="q-text"><strong>4.</strong> Which two questions does the synchronization model tell you to ask when writing an effect?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4,this,false)">"Does this run on mount?" and "Does this run on unmount?"</button>
+      <button class="option" onclick="answer(4,this,false)">"Is this synchronous?" and "Does it return a promise?"</button>
+      <button class="option" onclick="answer(4,this,true)">"What external thing am I keeping in sync?" and "Which React values does it depend on?"</button>
+      <button class="option" onclick="answer(4,this,false)">"Should this be a useMemo?" and "Should this be a useCallback?"</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="score-area" id="score-area"><p id="score-text"></p></div>
+</div>
+
+<div class="nav">
+  <p>Something still unclear? <strong>Ask your teacher in the chat</strong>. Next: what goes in the dependency array, and why the linter is so strict about it.</p>
+  <p style="margin-top:0.5rem">← <a href="0003-updater-functions.html">Lesson 3</a> &nbsp; · &nbsp; <a href="../../../index.html">Home</a> &nbsp; · &nbsp; <a href="0005-dependency-array.html">Lesson 5</a> →</p>
+</div>
+
+<script>
+  const answered = {}, results = {};
+  const feedback = {
+    1: { ok: "Right. An effect's job is synchronization — keeping something outside React aligned with state and props.",
+         err: "Not quite. The whole point of this lesson: an effect isn't tied to a moment. It keeps an external system in sync." },
+    2: { ok: "Exactly. The lifecycle framing pushes you toward 'when does this run?' — the wrong question — instead of 'what am I syncing?'",
+         err: "Not quite. The model isn't wrong because it's deprecated; it's misleading because it frames effects as moments in time." },
+    3: { ok: "Yes. The dependency changed, so the old sync no longer matches the target — React cleans up and re-syncs.",
+         err: "Not quite. A changed dependency means the external state has drifted from the target, so React tears down and re-runs the effect." },
+    4: { ok: "Right. Name the external system and its React dependencies, and the effect (and its dep array) almost writes itself.",
+         err: "Not quite. The two questions are: what am I keeping in sync, and which React values does it depend on?" },
+  };
+  function answer(q, btn, isCorrect) {
+    if (answered[q]) return; answered[q] = true; results[q] = isCorrect;
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => o.disabled = true);
+    if (isCorrect) { btn.classList.add('correct'); document.getElementById('f' + q).innerHTML = '✓ ' + feedback[q].ok; document.getElementById('f' + q).className = 'feedback ok'; }
+    else { btn.classList.add('wrong'); document.getElementById('f' + q).innerHTML = '✗ ' + feedback[q].err; document.getElementById('f' + q).className = 'feedback err';
+      opts.forEach(o => { if (o.getAttribute('onclick').includes(', true)')) o.classList.add('reveal'); }); }
+    if (Object.keys(answered).length === 4) showScore();
+  }
+  function showScore() {
+    const got = Object.values(results).filter(Boolean).length;
+    const msg = ["Let's go over this together — start from the thermostat.",
+      "Close. Re-read 'The one thing to remember'.",
+      "Solid. Review the one you missed, then move to Lesson 5.",
+      "You've got it. You're thinking in synchronization, not lifecycle."][got - 1];
+    const area = document.getElementById('score-area');
+    document.getElementById('score-text').innerHTML = `<strong>${got}/4</strong> — ${msg}`;
+    area.classList.add('visible');
+  }
+</script>
+</body>
+</html>

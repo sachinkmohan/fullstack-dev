@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 8 — useRef, the escape hatch</title>
+  <style>
+    :root { --text:#1a1a1a; --muted:#666; --accent:#2563eb; --code-bg:#f5f5f0; --border:#e0e0d8; --correct:#16a34a; --wrong:#dc2626; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; font-size: 18px; line-height: 1.8; color: var(--text); max-width: 640px; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
+    .progress { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+    h1 { font-size: 1.65rem; margin-bottom: 0.2rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.1rem; font-weight: bold; margin: 2.25rem 0 0.6rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+    pre, code { font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 0.875rem; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; overflow-x: auto; margin: 1.1rem 0 1.4rem; line-height: 1.65; }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9rem; }
+    .box { border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.4rem 0; background: #fafaf8; }
+    .box p { margin: 0; }
+    .highlight { border-left: 3px solid var(--accent); background: #eff6ff; border-radius: 0 6px 6px 0; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.25rem 0; }
+    .puzzle { background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 1.1rem 1.3rem; margin: 1.5rem 0; }
+    .puzzle strong { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: #78350f; text-transform: uppercase; letter-spacing: 0.05em; }
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz-title { font-size: 1rem; font-weight: bold; margin-bottom: 1.5rem; }
+    .question { margin-bottom: 2rem; }
+    .question:last-child { margin-bottom: 0; }
+    .q-text { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.45rem; }
+    .option { display: block; width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 0.9rem; background: white; text-align: left; transition: background 0.12s, border-color 0.12s; }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: #14532d; font-weight: bold; }
+    .option.wrong { background: #fee2e2; border-color: var(--wrong); color: #7f1d1d; }
+    .option.reveal { background: #dcfce7; border-color: var(--correct); color: #14532d; opacity: 0.75; }
+    .feedback { font-size: 0.87rem; margin-top: 0.45rem; min-height: 1.2em; }
+    .feedback.ok { color: var(--correct); }
+    .feedback.err { color: var(--wrong); }
+    .score-area { display: none; text-align: center; padding: 0.75rem; margin-top: 1.25rem; border-top: 1px solid var(--border); }
+    .score-area.visible { display: block; }
+    .primary-source { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.9rem 1.1rem; margin: 2rem 0; font-size: 0.9rem; }
+    .primary-source strong { display: block; margin-bottom: 0.2rem; }
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+    .nav a { color: var(--accent); }
+    /* lesson-specific: "box that survives renders" visual */
+    .survives { margin: 1.5rem 0; }
+    .renders { display: flex; gap: 0.6rem; align-items: stretch; flex-wrap: wrap; }
+    .render-col { flex: 1; min-width: 7rem; border: 1px dashed var(--border); border-radius: 8px; padding: 0.7rem; text-align: center; background: #fafaf8; }
+    .render-col .rlabel { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.5rem; }
+    .render-col .state-chip { font-family: 'SF Mono', monospace; font-size: 0.75rem; padding: 0.2rem 0.4rem; border-radius: 4px; background: #eff6ff; border: 1px solid #bfdbfe; color: var(--accent); display: inline-block; }
+    .ref-bar { margin-top: 0.8rem; border: 2px solid var(--correct); border-radius: 8px; background: #dcfce7; color: #14532d; font-family: 'SF Mono', monospace; font-size: 0.78rem; padding: 0.55rem; text-align: center; }
+    .survives-cap { font-size: 0.78rem; color: var(--muted); font-style: italic; margin-top: 0.6rem; }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 8 &nbsp;·&nbsp; React Hooks &nbsp;·&nbsp; Escape hatches</p>
+<h1>useRef, the escape hatch</h1>
+<p class="meta">~5 minutes &nbsp;·&nbsp; One concept only: a ref is a mutable box that survives renders without triggering them</p>
+
+<p>Lesson 1 established that state is a <em>snapshot</em> — frozen per render, and changing it causes a re-render. Sometimes you want the exact opposite: a value that persists across renders but that you can mutate freely <strong>without</strong> causing a render. That's <code>useRef</code>.</p>
+
+<hr />
+
+<h2>What it gives you</h2>
+
+<pre>const ref = useRef(0);
+
+ref.current;        // read the box
+ref.current = 5;    // write the box — no re-render</pre>
+
+<p>It returns a plain object with a single <code>current</code> property. React hands you the <em>same object</em> on every render and otherwise stays out of the way. Reading or writing <code>current</code> is just touching a normal JavaScript property — React never notices.</p>
+
+<div class="survives">
+  <div class="renders">
+    <div class="render-col">
+      <div class="rlabel">Render 1</div>
+      <span class="state-chip">count = 0</span>
+    </div>
+    <div class="render-col">
+      <div class="rlabel">Render 2</div>
+      <span class="state-chip">count = 1</span>
+    </div>
+    <div class="render-col">
+      <div class="rlabel">Render 3</div>
+      <span class="state-chip">count = 2</span>
+    </div>
+  </div>
+  <div class="ref-bar">ref.current — one box, shared across all renders</div>
+  <p class="survives-cap">State is a fresh snapshot each render. The ref is a single box that outlives every render.</p>
+</div>
+
+<hr />
+
+<h2>The one thing to remember</h2>
+
+<div class="box highlight">
+  <p><strong>State vs ref: changing state triggers a re-render and gives you a new snapshot; changing a ref does neither. Use state for anything the UI displays. Use a ref for values you need to <em>remember</em> but that the render output doesn't read.</strong></p>
+</div>
+
+<hr />
+
+<h2>The two jobs of a ref</h2>
+
+<p><strong>1. Holding a mutable value across renders.</strong> A timer ID, the previous value of a prop, a "has this already run?" flag — things you read in handlers or effects but never render:</p>
+
+<pre>const intervalId = useRef(null);
+function start() { intervalId.current = setInterval(tick, 1000); }
+function stop()  { clearInterval(intervalId.current); }</pre>
+
+<p><strong>2. Referencing a DOM node.</strong> Pass the ref to a JSX element's <code>ref</code> attribute and React fills <code>current</code> with the actual DOM node after render — your hatch to focus, measure, or scroll it:</p>
+
+<pre>const inputRef = useRef(null);
+&lt;input ref={inputRef} /&gt;
+// later: inputRef.current.focus();</pre>
+
+<hr />
+
+<h2>The rule that keeps it safe</h2>
+
+<p>Because writing a ref doesn't re-render, the screen won't update to reflect it. So: <strong>don't read or write <code>ref.current</code> during rendering</strong> (except for lazy first-time init). Touch it in event handlers and effects, where the timing is well-defined. If you find yourself wanting the UI to react to a ref change, that's your sign it should have been state.</p>
+
+<div class="puzzle">
+  <strong>Predict the bug</strong>
+  <p>A developer stores a counter in a ref and renders <code>{counter.current}</code>, incrementing it in a click handler. They click three times. What shows on screen?</p>
+  <p style="margin-top:0.6rem"><code>0</code> — the ref updates to 3, but writing it never triggered a re-render, so the displayed text is stuck at the first render's value. A value the UI displays must be state, not a ref. This is the mirror image of Lesson 1's snapshot lesson.</p>
+</div>
+
+<hr />
+
+<h2>Why interviewers love this</h2>
+
+<p>"What's the difference between <code>useState</code> and <code>useRef</code>?" is a staple. The weak answer is "refs are for DOM access." The strong answer covers both halves: <em>"A ref is a mutable box that persists across renders but doesn't trigger one when it changes, so its value isn't a snapshot. I reach for it for mutable values the UI doesn't display — timer IDs, previous values — and for DOM nodes. The moment the UI needs to reflect the value, it has to be state instead."</em> That shows you understand refs as the deliberate <em>opposite</em> of the snapshot model.</p>
+
+<div class="primary-source">
+  <strong>📖 Primary source</strong>
+  <a href="https://react.dev/learn/referencing-values-with-refs" target="_blank">React Docs — "Referencing Values with Refs"</a>. The state-vs-ref contrast and the "don't read/write during render" rule, with a stopwatch example. (8 min)
+</div>
+
+<hr />
+
+<div class="quiz" id="quiz">
+  <p class="quiz-title">Check your understanding</p>
+
+  <div class="question" id="q1">
+    <p class="q-text"><strong>1.</strong> What happens when you assign a new value to <code>ref.current</code>?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1,this,false)">The component re-renders with the new value</button>
+      <button class="option" onclick="answer(1,this,true)">The value changes, but no re-render is triggered</button>
+      <button class="option" onclick="answer(1,this,false)">React throws because refs are read-only</button>
+      <button class="option" onclick="answer(1,this,false)">A new ref object is created</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p class="q-text"><strong>2.</strong> Which value belongs in a ref rather than state?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2,this,false)">The text shown in a heading</button>
+      <button class="option" onclick="answer(2,this,false)">A counter displayed on screen</button>
+      <button class="option" onclick="answer(2,this,true)">A setInterval ID you only read in start/stop handlers</button>
+      <button class="option" onclick="answer(2,this,false)">A list of items rendered as &lt;li&gt; elements</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p class="q-text"><strong>3.</strong> Why does rendering <code>{counter.current}</code> and incrementing the ref on click leave the screen stuck?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3,this,false)">Refs reset to their initial value every render</button>
+      <button class="option" onclick="answer(3,this,true)">Writing a ref doesn't trigger a re-render, so the displayed text never updates</button>
+      <button class="option" onclick="answer(3,this,false)">ref.current can only be read inside effects</button>
+      <button class="option" onclick="answer(3,this,false)">The click handler captures a stale ref object</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p class="q-text"><strong>4.</strong> What is the rule about touching <code>ref.current</code> during render?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4,this,false)">Always read it during render to stay in sync</button>
+      <button class="option" onclick="answer(4,this,true)">Avoid reading or writing it during render (except lazy init); use handlers and effects</button>
+      <button class="option" onclick="answer(4,this,false)">Refs can only be touched inside useMemo</button>
+      <button class="option" onclick="answer(4,this,false)">You must wrap every ref access in useEffect</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="score-area" id="score-area"><p id="score-text"></p></div>
+</div>
+
+<div class="nav">
+  <p>Something still unclear? <strong>Ask your teacher in the chat</strong>. Next: <code>useReducer</code> — and when to reach for it over <code>useState</code>.</p>
+  <p style="margin-top:0.5rem">← <a href="0007-you-might-not-need-an-effect.html">Lesson 7</a> &nbsp; · &nbsp; <a href="../../../index.html">Home</a> &nbsp; · &nbsp; <a href="0009-usereducer.html">Lesson 9</a> →</p>
+</div>
+
+<script>
+  const answered = {}, results = {};
+  const feedback = {
+    1: { ok: "Right. A ref is a plain mutable box — writing current changes the value without any re-render.",
+         err: "Not quite. The whole point of a ref: writing current mutates the value but never triggers a render." },
+    2: { ok: "Exactly. A timer ID is read in handlers but never displayed — perfect for a ref.",
+         err: "Not quite. Anything the UI displays must be state. A ref is for values you remember but don't render, like a timer ID." },
+    3: { ok: "Yes. The ref updates, but with no re-render the rendered text stays frozen at the first render's value.",
+         err: "Not quite. Refs persist fine; the problem is that writing one doesn't re-render, so the display never refreshes." },
+    4: { ok: "Right. Read/write refs in handlers and effects, not during render — render output shouldn't depend on a ref.",
+         err: "Not quite. Avoid touching ref.current during render (except lazy init); do it in handlers and effects." },
+  };
+  function answer(q, btn, isCorrect) {
+    if (answered[q]) return; answered[q] = true; results[q] = isCorrect;
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => o.disabled = true);
+    if (isCorrect) { btn.classList.add('correct'); document.getElementById('f' + q).innerHTML = '✓ ' + feedback[q].ok; document.getElementById('f' + q).className = 'feedback ok'; }
+    else { btn.classList.add('wrong'); document.getElementById('f' + q).innerHTML = '✗ ' + feedback[q].err; document.getElementById('f' + q).className = 'feedback err';
+      opts.forEach(o => { if (o.getAttribute('onclick').includes(', true)')) o.classList.add('reveal'); }); }
+    if (Object.keys(answered).length === 4) showScore();
+  }
+  function showScore() {
+    const got = Object.values(results).filter(Boolean).length;
+    const msg = ["Let's go over this together — start from the 'box that survives renders'.",
+      "Close. Re-read 'The rule that keeps it safe'.",
+      "Solid. Review the one you missed, then move to Lesson 9.",
+      "You've got it. Refs are the deliberate opposite of the snapshot."][got - 1];
+    const area = document.getElementById('score-area');
+    document.getElementById('score-text').innerHTML = `<strong>${got}/4</strong> — ${msg}`;
+    area.classList.add('visible');
+  }
+</script>
+</body>
+</html>
