@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 2 — Generics from scratch</title>
+  <style>
+    :root {
+      --text: #1a1a1a;
+      --muted: #666;
+      --accent: #2563eb;
+      --code-bg: #f5f5f0;
+      --border: #e0e0d8;
+      --correct: #16a34a;
+      --wrong: #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 18px;
+      line-height: 1.8;
+      color: var(--text);
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 6rem;
+    }
+    .progress { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+    h1 { font-size: 1.65rem; margin-bottom: 0.2rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.1rem; font-weight: bold; margin: 2.25rem 0 0.6rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+
+    pre, code {
+      font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+      font-size: 0.875rem;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1.1rem 0 1.4rem;
+      line-height: 1.65;
+    }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9rem; }
+
+    .box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.4rem 0;
+      background: #fafaf8;
+    }
+    .box p { margin: 0; }
+    .highlight {
+      border-left: 3px solid var(--accent);
+      background: #eff6ff;
+      border-radius: 0 6px 6px 0;
+    }
+
+    .analogy-visual {
+      display: flex;
+      gap: 1rem;
+      margin: 1.25rem 0 1.5rem;
+      flex-wrap: wrap;
+    }
+    .stamp-box {
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      text-align: center;
+      font-family: 'SF Mono', monospace;
+      font-size: 0.8rem;
+      flex: 1;
+      min-width: 130px;
+      background: white;
+    }
+    .stamp-box .label { color: var(--muted); font-size: 0.7rem; margin-bottom: 0.3rem; }
+    .stamp-box .value { font-size: 0.95rem; font-weight: bold; }
+    .stamp-box.filled { border-color: var(--accent); background: #eff6ff; }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.25rem 0; }
+
+    /* Quiz */
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz-title { font-size: 1rem; font-weight: bold; margin-bottom: 1.5rem; }
+    .question { margin-bottom: 2rem; }
+    .question:last-child { margin-bottom: 0; }
+    .q-text { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.45rem; }
+    .option {
+      display: block; width: 100%;
+      padding: 0.65rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: Georgia, serif;
+      font-size: 0.9rem;
+      background: white;
+      text-align: left;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: #14532d; font-weight: bold; }
+    .option.wrong   { background: #fee2e2; border-color: var(--wrong);   color: #7f1d1d; }
+    .option.reveal  { background: #dcfce7; border-color: var(--correct); color: #14532d; opacity: 0.75; }
+    .feedback { font-size: 0.87rem; margin-top: 0.45rem; min-height: 1.2em; }
+    .feedback.ok  { color: var(--correct); }
+    .feedback.err { color: var(--wrong); }
+
+    .score-area { display: none; text-align: center; padding: 0.75rem; margin-top: 1.25rem; border-top: 1px solid var(--border); }
+    .score-area.visible { display: block; }
+    .score-area p { font-size: 1rem; }
+
+    .primary-source {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      padding: 0.9rem 1.1rem;
+      margin: 2rem 0;
+      font-size: 0.9rem;
+    }
+    .primary-source strong { display: block; margin-bottom: 0.2rem; }
+
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+    .nav a { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 2 &nbsp;·&nbsp; TypeScript Generics &nbsp;·&nbsp; Fundamentals</p>
+<h1>Generics from scratch</h1>
+<p class="meta">~8 minutes &nbsp;·&nbsp; One concept only: what is a type parameter?</p>
+
+<p>This lesson has one job: make <code>&lt;T&gt;</code> feel obvious. Nothing else.</p>
+
+<hr />
+
+<h2>Start with something you already know</h2>
+
+<p>You've written this in JavaScript before:</p>
+
+<pre>function giveMeBack(value) {
+  return value;
+}</pre>
+
+<p>It works with anything:</p>
+
+<pre>giveMeBack("hello")  // returns "hello"
+giveMeBack(42)       // returns 42
+giveMeBack(true)     // returns true</pre>
+
+<p>Now TypeScript asks: <em>what type does this function return?</em></p>
+
+<p>The honest answer is: <strong>it depends on what you pass in.</strong></p>
+
+<hr />
+
+<h2>The problem with guessing</h2>
+
+<p>You could type it as <code>string</code>:</p>
+
+<pre>function giveMeBack(value: string): string {
+  return value;
+}</pre>
+
+<p>But now it only works with strings. Pass a number and TypeScript gives an error.</p>
+
+<p>You could use <code>any</code>:</p>
+
+<pre>function giveMeBack(value: any): any {
+  return value;
+}</pre>
+
+<p>This compiles — but you've told TypeScript <em>"stop checking, I don't care."</em> The return type is <code>any</code>, so TypeScript can't help you after this point. In an interview, this answer will get pushed back on.</p>
+
+<div class="box highlight">
+  <p>The problem: you want to say <em>"whatever type goes in, that same type comes out"</em> — without picking a specific type in advance.</p>
+</div>
+
+<hr />
+
+<h2>The solution: a placeholder for the type</h2>
+
+<p>Generics let you use a <strong>placeholder</strong>. You write <code>&lt;T&gt;</code> — where <code>T</code> just means "some type, to be decided later":</p>
+
+<pre>function giveMeBack&lt;T&gt;(value: T): T {
+  return value;
+}</pre>
+
+<p>Read this out loud: <em>"This function takes some type T. It receives a value of that type. It returns a value of that type."</em></p>
+
+<p>Now when you call it, TypeScript fills in <code>T</code> automatically:</p>
+
+<div class="analogy-visual">
+  <div class="stamp-box filled">
+    <div class="label">you call with</div>
+    <div class="value">"hello"</div>
+    <div class="label" style="margin-top:0.4rem">T becomes</div>
+    <div class="value">string</div>
+  </div>
+  <div class="stamp-box filled">
+    <div class="label">you call with</div>
+    <div class="value">42</div>
+    <div class="label" style="margin-top:0.4rem">T becomes</div>
+    <div class="value">number</div>
+  </div>
+  <div class="stamp-box filled">
+    <div class="label">you call with</div>
+    <div class="value">true</div>
+    <div class="label" style="margin-top:0.4rem">T becomes</div>
+    <div class="value">boolean</div>
+  </div>
+</div>
+
+<pre>const a = giveMeBack("hello");  // TypeScript knows: a is string
+const b = giveMeBack(42);        // TypeScript knows: b is number
+const c = giveMeBack(true);      // TypeScript knows: c is boolean</pre>
+
+<p>You never wrote <code>string</code>, <code>number</code>, or <code>boolean</code> in the function. TypeScript figured it out from the argument.</p>
+
+<hr />
+
+<h2>T is just a name — like a variable</h2>
+
+<p>Just like you name a variable <code>x</code> or <code>count</code>, you name a type parameter <code>T</code>. The name doesn't matter — <code>T</code> is just the convention everyone uses (short for "Type").</p>
+
+<pre>// These are all identical:
+function giveMeBack&lt;T&gt;(value: T): T { return value; }
+function giveMeBack&lt;Banana&gt;(value: Banana): Banana { return value; }
+function giveMeBack&lt;Whatever&gt;(value: Whatever): Whatever { return value; }</pre>
+
+<p>In interviews, always use <code>T</code>. It signals you know the convention.</p>
+
+<hr />
+
+<h2>You've been using generics all along</h2>
+
+<p>Look at these — you've written them before:</p>
+
+<pre>const names: Array&lt;string&gt; = ["Alice", "Bob"];
+const ids:   Array&lt;number&gt; = [1, 2, 3];</pre>
+
+<p><code>Array&lt;string&gt;</code> means: "an Array where T = string". The <code>&lt;string&gt;</code> is you explicitly telling TypeScript what the placeholder is. The only new thing in this lesson is that you can now write your <em>own</em> functions that use the same pattern.</p>
+
+<div class="primary-source">
+  <strong>📖 Primary source</strong>
+  <a href="https://www.typescriptlang.org/docs/handbook/2/generics.html#hello-world-of-generics" target="_blank">TypeScript Handbook — "Hello World of Generics"</a>. Read just this one short section. It shows exactly what we covered, straight from the source. (2 min)
+</div>
+
+<hr />
+
+<div class="quiz" id="quiz">
+  <p class="quiz-title">Check your understanding</p>
+
+  <div class="question" id="q1">
+    <p class="q-text"><strong>1.</strong> What does <code>T</code> represent in <code>function wrap&lt;T&gt;(x: T): T</code>?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1,this,false)">The string type, used when no type is given</button>
+      <button class="option" onclick="answer(1,this,false)">A special built-in TypeScript keyword</button>
+      <button class="option" onclick="answer(1,this,true)">A placeholder filled in by whatever type you pass</button>
+      <button class="option" onclick="answer(1,this,false)">The return type, which is always unknown</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p class="q-text"><strong>2.</strong> You call <code>wrap(100)</code>. What does TypeScript set <code>T</code> to?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2,this,false)">any</button>
+      <button class="option" onclick="answer(2,this,true)">number</button>
+      <button class="option" onclick="answer(2,this,false)">unknown</button>
+      <button class="option" onclick="answer(2,this,false)">T stays as T</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p class="q-text"><strong>3.</strong> Why is <code>function wrap(x: any): any</code> worse than a generic version?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3,this,false)">It only works with strings and numbers</button>
+      <button class="option" onclick="answer(3,this,true)">TypeScript forgets the type — the return value is just any</button>
+      <button class="option" onclick="answer(3,this,false)">It throws an error when you call it with a number</button>
+      <button class="option" onclick="answer(3,this,false)">It runs slower because TypeScript can't optimise it</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p class="q-text"><strong>4.</strong> <code>Array&lt;string&gt;</code> is an example of a generic type. What is <code>string</code> doing here?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4,this,false)">Declaring that Array only exists for strings</button>
+      <button class="option" onclick="answer(4,this,false)">A JavaScript method called on the array</button>
+      <button class="option" onclick="answer(4,this,true)">Filling in the placeholder T with a specific type</button>
+      <button class="option" onclick="answer(4,this,false)">A type alias defined somewhere else in the code</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="score-area" id="score-area">
+    <p id="score-text"></p>
+  </div>
+</div>
+
+<div class="nav">
+  <p>Something still unclear? <strong>Ask your teacher in the chat</strong> — no question is too basic.</p>
+  <p style="margin-top:0.5rem">← <a href="0001-what-are-generics.html">Lesson 1</a></p>
+</div>
+
+<script>
+  const answered = {};
+  const results  = {};
+
+  const feedback = {
+    1: { ok: "Exactly. T is a placeholder — it gets filled in from whatever argument you pass.",
+         err: "Not quite. T isn't a real type at all — it's a stand-in that TypeScript replaces with the actual type at the call site." },
+    2: { ok: "Yes. You passed 100, which is a number, so TypeScript sets T = number.",
+         err: "Not quite. TypeScript looks at the argument (100) and infers T = number." },
+    3: { ok: "Right. With any, TypeScript stops tracking — the return value could be anything and TS won't warn you.",
+         err: "Not quite. The issue is the return type: any means TypeScript loses all information about what comes back." },
+    4: { ok: "Correct. string is the concrete type you're slotting into Array's T placeholder.",
+         err: "Not quite. string is filling in Array's type parameter — it's saying 'T = string for this array'." },
+  };
+
+  function answer(q, btn, isCorrect) {
+    if (answered[q]) return;
+    answered[q] = true;
+    results[q] = isCorrect;
+
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => o.disabled = true);
+
+    if (isCorrect) {
+      btn.classList.add('correct');
+      document.getElementById('f' + q).innerHTML = '✓ ' + feedback[q].ok;
+      document.getElementById('f' + q).className = 'feedback ok';
+    } else {
+      btn.classList.add('wrong');
+      document.getElementById('f' + q).innerHTML = '✗ ' + feedback[q].err;
+      document.getElementById('f' + q).className = 'feedback err';
+      opts.forEach(o => {
+        if (o.getAttribute('onclick').includes(', true)')) o.classList.add('reveal');
+      });
+    }
+
+    if (Object.keys(answered).length === 4) showScore();
+  }
+
+  function showScore() {
+    const got = Object.values(results).filter(Boolean).length;
+    const msg = [
+      "Let's go over this together — ask your teacher to walk through the analogy again.",
+      "Getting there. Re-read the 'placeholder' section above, then try again.",
+      "Almost there. Review the one you missed, then move to Lesson 3.",
+      "You've got it. T as a placeholder is the foundation everything else builds on.",
+    ][got - 1];
+    const area = document.getElementById('score-area');
+    document.getElementById('score-text').innerHTML = `<strong>${got}/4</strong> — ${msg}`;
+    area.classList.add('visible');
+  }
+</script>
+</body>
+</html>

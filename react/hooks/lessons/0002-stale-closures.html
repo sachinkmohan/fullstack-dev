@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 2 — Stale closures</title>
+  <style>
+    :root { --text:#1a1a1a; --muted:#666; --accent:#2563eb; --code-bg:#f5f5f0; --border:#e0e0d8; --correct:#16a34a; --wrong:#dc2626; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; font-size: 18px; line-height: 1.8; color: var(--text); max-width: 640px; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
+    .progress { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+    h1 { font-size: 1.65rem; margin-bottom: 0.2rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.1rem; font-weight: bold; margin: 2.25rem 0 0.6rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+    pre, code { font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 0.875rem; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; overflow-x: auto; margin: 1.1rem 0 1.4rem; line-height: 1.65; }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9rem; }
+    .box { border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.4rem 0; background: #fafaf8; }
+    .box p { margin: 0; }
+    .highlight { border-left: 3px solid var(--accent); background: #eff6ff; border-radius: 0 6px 6px 0; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.25rem 0; }
+    .puzzle { background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 1.1rem 1.3rem; margin: 1.5rem 0; }
+    .puzzle strong { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: #78350f; text-transform: uppercase; letter-spacing: 0.05em; }
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz-title { font-size: 1rem; font-weight: bold; margin-bottom: 1.5rem; }
+    .question { margin-bottom: 2rem; }
+    .question:last-child { margin-bottom: 0; }
+    .q-text { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.45rem; }
+    .option { display: block; width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 0.9rem; background: white; text-align: left; transition: background 0.12s, border-color 0.12s; }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: #14532d; font-weight: bold; }
+    .option.wrong { background: #fee2e2; border-color: var(--wrong); color: #7f1d1d; }
+    .option.reveal { background: #dcfce7; border-color: var(--correct); color: #14532d; opacity: 0.75; }
+    .feedback { font-size: 0.87rem; margin-top: 0.45rem; min-height: 1.2em; }
+    .feedback.ok { color: var(--correct); }
+    .feedback.err { color: var(--wrong); }
+    .score-area { display: none; text-align: center; padding: 0.75rem; margin-top: 1.25rem; border-top: 1px solid var(--border); }
+    .score-area.visible { display: block; }
+    .primary-source { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.9rem 1.1rem; margin: 2rem 0; font-size: 0.9rem; }
+    .primary-source strong { display: block; margin-bottom: 0.2rem; }
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+    .nav a { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 2 &nbsp;·&nbsp; React Hooks &nbsp;·&nbsp; Mental models</p>
+<h1>Stale closures</h1>
+<p class="meta">~7 minutes &nbsp;·&nbsp; One concept only: functions remember the state from when they were created</p>
+
+<p>You learned in <a href="0001-each-render-is-a-snapshot.html">Lesson 1</a> that each render is a snapshot. This lesson takes one consequence of that and makes it visible: <strong>any function defined during a render closes over that render's snapshot — and keeps it forever</strong>.</p>
+
+<hr />
+
+<h2>The classic interview bug</h2>
+
+<div class="puzzle">
+  <strong>Interview classic</strong>
+  <p>This counter is supposed to tick up once per second. What actually happens?</p>
+</div>
+
+<pre>function Counter() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCount(count + 1);
+    }, 1000);
+    return () => clearInterval(id);
+  }, []); // empty deps on purpose
+
+  return &lt;p&gt;{count}&lt;/p&gt;;
+}</pre>
+
+<p>It shows <strong>0, then 1, then 1, then 1 forever</strong>.</p>
+
+<p>The interval keeps firing. But the count is stuck at 1.</p>
+
+<hr />
+
+<h2>The one thing to remember</h2>
+
+<div class="box highlight">
+  <p><strong>The arrow function inside <code>setInterval</code> was created on the first render. It captured <code>count = 0</code>. On every tick, it still sees <code>count = 0</code> — even though the real state has changed.</strong></p>
+</div>
+
+<p>That's a stale closure.</p>
+
+<hr />
+
+<h2>Walking through it</h2>
+
+<p>On render #1, <code>count</code> is <code>0</code>. The effect runs once (because deps are <code>[]</code>) and creates an interval. The callback inside that interval is a closure — it has <code>count = 0</code> baked into it.</p>
+
+<p>One second later, the interval fires. It calls <code>setCount(0 + 1)</code>. State becomes <code>1</code>. React re-renders.</p>
+
+<p>On render #2, there's a new <code>count = 1</code>, a new <code>setCount</code>, a new component scope entirely. But the effect doesn't re-run (deps are <code>[]</code>). The old interval is still running. The old callback is still alive. It still sees <code>count = 0</code>.</p>
+
+<p>So one second later it calls <code>setCount(0 + 1)</code> again. State is already <code>1</code>. React notices no change. The screen never updates again.</p>
+
+<hr />
+
+<h2>Three ways to fix it</h2>
+
+<p><strong>Fix 1 — Updater function.</strong> Don't read <code>count</code> from the closure. Read it fresh from React:</p>
+
+<pre>setCount(prev => prev + 1);</pre>
+
+<p><strong>Fix 2 — Honest dependencies.</strong> Tell the effect it depends on <code>count</code>. The interval gets torn down and re-created every render — which works, but is wasteful:</p>
+
+<pre>useEffect(() => {
+  const id = setInterval(() => setCount(count + 1), 1000);
+  return () => clearInterval(id);
+}, [count]);</pre>
+
+<p><strong>Fix 3 — A ref.</strong> If you need a value that isn't snapshotted, <code>useRef</code> gives you a mutable box that always holds the latest. (We'll cover this fully in a later lesson.)</p>
+
+<hr />
+
+<h2>Why interviewers love this</h2>
+
+<p>Stale closures are the #1 source of "my React code is doing the wrong thing" bugs in real codebases. If you can spot one on a whiteboard and name all three fixes, you're showing senior-level intuition. The bug is also a back-door way to test if you really understand the snapshot model from Lesson 1.</p>
+
+<div class="primary-source">
+  <strong>📖 Primary source</strong>
+  <a href="https://overreacted.io/a-complete-guide-to-useeffect/" target="_blank">Dan Abramov — "A Complete Guide to useEffect"</a>. Read the section titled "Each Render Has Its Own Everything" — it's the canonical explanation of stale closures, from a React core team member. (10 min)
+</div>
+
+<hr />
+
+<div class="quiz" id="quiz">
+  <p class="quiz-title">Check your understanding</p>
+
+  <div class="question" id="q1">
+    <p class="q-text"><strong>1.</strong> Why does the interval callback see <code>count = 0</code> forever?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1,this,false)">Because setInterval caches its first argument</button>
+      <button class="option" onclick="answer(1,this,true)">Because it was created on render #1 and captured that render's count</button>
+      <button class="option" onclick="answer(1,this,false)">Because setCount only runs once with an empty dep array</button>
+      <button class="option" onclick="answer(1,this,false)">Because React batches all setState calls into one</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p class="q-text"><strong>2.</strong> Which fix avoids re-creating the interval every render?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2,this,true)">Using setCount(prev =&gt; prev + 1)</button>
+      <button class="option" onclick="answer(2,this,false)">Adding count to the dependency array</button>
+      <button class="option" onclick="answer(2,this,false)">Wrapping the effect in useMemo</button>
+      <button class="option" onclick="answer(2,this,false)">Calling setInterval outside the effect</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p class="q-text"><strong>3.</strong> A stale closure is a direct consequence of which fact?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3,this,false)">setState is asynchronous</button>
+      <button class="option" onclick="answer(3,this,false)">React batches renders for performance</button>
+      <button class="option" onclick="answer(3,this,true)">Each render is its own function call with its own variables</button>
+      <button class="option" onclick="answer(3,this,false)">useEffect runs after the browser paints</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p class="q-text"><strong>4.</strong> If the effect's dependency array were <code>[count]</code> instead of <code>[]</code>, what would happen on every state update?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4,this,false)">Nothing — React ignores deps with primitive values</button>
+      <button class="option" onclick="answer(4,this,true)">The old interval is cleared and a new one is created</button>
+      <button class="option" onclick="answer(4,this,false)">A new interval is created on top of the old one</button>
+      <button class="option" onclick="answer(4,this,false)">React throws an error about an infinite loop</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="score-area" id="score-area"><p id="score-text"></p></div>
+</div>
+
+<div class="nav">
+  <p>Something still unclear? <strong>Ask your teacher in the chat</strong>. Next: how the updater function form of <code>setState</code> escapes the snapshot for good.</p>
+  <p style="margin-top:0.5rem">← <a href="0001-each-render-is-a-snapshot.html">Lesson 1</a> &nbsp; · &nbsp; <a href="0003-updater-functions.html">Lesson 3</a> →</p>
+</div>
+
+<script>
+  const answered = {}, results = {};
+  const feedback = {
+    1: { ok: "Right. The callback closed over the render #1 scope where count was 0 — and it never sees any other scope.",
+         err: "Not quite. setInterval doesn't cache anything special — JavaScript closures do. The callback remembers the render in which it was defined." },
+    2: { ok: "Yes. The updater function reads the latest state from React directly, so it doesn't rely on the closure's stale count.",
+         err: "Not quite. Adding count to deps does fix the bug but recreates the interval every tick. The updater approach lets you keep deps empty." },
+    3: { ok: "Exactly. Stale closures are just JS closures over React's per-render snapshot. No snapshot model, no stale closures.",
+         err: "Not quite. The root cause is the snapshot model from Lesson 1 — each render captures its own values, and functions defined in that render hold on to them." },
+    4: { ok: "Correct. Effects re-run when their deps change — cleanup clears the old interval, then setup creates a fresh one with the new count.",
+         err: "Not quite. When a dep changes, React runs the cleanup function first (clearInterval), then runs the effect again with the new value." },
+  };
+  function answer(q, btn, isCorrect) {
+    if (answered[q]) return; answered[q] = true; results[q] = isCorrect;
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => o.disabled = true);
+    if (isCorrect) { btn.classList.add('correct'); document.getElementById('f' + q).innerHTML = '✓ ' + feedback[q].ok; document.getElementById('f' + q).className = 'feedback ok'; }
+    else { btn.classList.add('wrong'); document.getElementById('f' + q).innerHTML = '✗ ' + feedback[q].err; document.getElementById('f' + q).className = 'feedback err';
+      opts.forEach(o => { if (o.getAttribute('onclick').includes(', true)')) o.classList.add('reveal'); }); }
+    if (Object.keys(answered).length === 4) showScore();
+  }
+  function showScore() {
+    const got = Object.values(results).filter(Boolean).length;
+    const msg = ["Let's go over this together — the snapshot model from Lesson 1 is the key.",
+      "Close. Re-read the walk-through, then try Lesson 3.",
+      "Solid. Review the one you missed, then move to Lesson 3.",
+      "You've got it. Stale closures will never surprise you again."][got - 1];
+    const area = document.getElementById('score-area');
+    document.getElementById('score-text').innerHTML = `<strong>${got}/4</strong> — ${msg}`;
+    area.classList.add('visible');
+  }
+</script>
+</body>
+</html>

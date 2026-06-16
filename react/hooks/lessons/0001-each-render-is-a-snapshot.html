@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 1 — Each render is a snapshot</title>
+  <style>
+    :root {
+      --text: #1a1a1a;
+      --muted: #666;
+      --accent: #2563eb;
+      --code-bg: #f5f5f0;
+      --border: #e0e0d8;
+      --correct: #16a34a;
+      --wrong: #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 18px;
+      line-height: 1.8;
+      color: var(--text);
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 6rem;
+    }
+    .progress { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+    h1 { font-size: 1.65rem; margin-bottom: 0.2rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.1rem; font-weight: bold; margin: 2.25rem 0 0.6rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+
+    pre, code {
+      font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+      font-size: 0.875rem;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1.1rem 0 1.4rem;
+      line-height: 1.65;
+    }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9rem; }
+
+    .box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.4rem 0;
+      background: #fafaf8;
+    }
+    .box p { margin: 0; }
+    .highlight {
+      border-left: 3px solid var(--accent);
+      background: #eff6ff;
+      border-radius: 0 6px 6px 0;
+    }
+
+    .snapshots {
+      display: flex;
+      gap: 0.75rem;
+      margin: 1.25rem 0 1.5rem;
+      flex-wrap: wrap;
+    }
+    .snap {
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      text-align: center;
+      font-family: 'SF Mono', monospace;
+      font-size: 0.8rem;
+      flex: 1;
+      min-width: 130px;
+      background: white;
+    }
+    .snap .label { color: var(--muted); font-size: 0.7rem; margin-bottom: 0.3rem; }
+    .snap .value { font-size: 1.1rem; font-weight: bold; color: var(--accent); }
+    .snap.frozen { border-color: var(--accent); background: #eff6ff; }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.25rem 0; }
+
+    /* Puzzle */
+    .puzzle {
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin: 1.5rem 0;
+    }
+    .puzzle strong { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: #78350f; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* Quiz */
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz-title { font-size: 1rem; font-weight: bold; margin-bottom: 1.5rem; }
+    .question { margin-bottom: 2rem; }
+    .question:last-child { margin-bottom: 0; }
+    .q-text { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.45rem; }
+    .option {
+      display: block; width: 100%;
+      padding: 0.65rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: Georgia, serif;
+      font-size: 0.9rem;
+      background: white;
+      text-align: left;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: #14532d; font-weight: bold; }
+    .option.wrong   { background: #fee2e2; border-color: var(--wrong);   color: #7f1d1d; }
+    .option.reveal  { background: #dcfce7; border-color: var(--correct); color: #14532d; opacity: 0.75; }
+    .feedback { font-size: 0.87rem; margin-top: 0.45rem; min-height: 1.2em; }
+    .feedback.ok  { color: var(--correct); }
+    .feedback.err { color: var(--wrong); }
+
+    .score-area { display: none; text-align: center; padding: 0.75rem; margin-top: 1.25rem; border-top: 1px solid var(--border); }
+    .score-area.visible { display: block; }
+    .score-area p { font-size: 1rem; }
+
+    .primary-source {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      padding: 0.9rem 1.1rem;
+      margin: 2rem 0;
+      font-size: 0.9rem;
+    }
+    .primary-source strong { display: block; margin-bottom: 0.2rem; }
+
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+    .nav a { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 1 &nbsp;·&nbsp; React Hooks &nbsp;·&nbsp; Mental models</p>
+<h1>Each render is a snapshot</h1>
+<p class="meta">~7 minutes &nbsp;·&nbsp; One concept only: state values are frozen per render</p>
+
+<p>You've used <code>useState</code> already. This lesson doesn't teach what it does — it teaches the one mental model that makes every other hook stop being weird.</p>
+
+<hr />
+
+<h2>Start with a puzzle</h2>
+
+<div class="puzzle">
+  <strong>Interview classic</strong>
+  <p>What does this button show after one click?</p>
+</div>
+
+<pre>function Counter() {
+  const [count, setCount] = useState(0);
+
+  function handleClick() {
+    setCount(count + 1);
+    setCount(count + 1);
+    setCount(count + 1);
+  }
+
+  return &lt;button onClick={handleClick}&gt;{count}&lt;/button&gt;;
+}</pre>
+
+<p>Most people guess <strong>3</strong>. The answer is <strong>1</strong>.</p>
+
+<p>This trips up nearly every intermediate React engineer in an interview. Once you can explain <em>why</em>, you've unlocked the mental model that explains almost every hook gotcha you'll ever hit.</p>
+
+<hr />
+
+<h2>The one thing to remember</h2>
+
+<div class="box highlight">
+  <p><strong>A component is just a function. It gets called over and over. Each call takes a frozen snapshot of state, and that snapshot never updates during the call — even if you call <code>setState</code> ten times.</strong></p>
+</div>
+
+<p>That's it. The whole lesson.</p>
+
+<hr />
+
+<h2>What "frozen snapshot" really means</h2>
+
+<p>When React calls your component, it hands you <code>count</code> as <em>a number</em> — not a reference to a live value. Inside that call, <code>count</code> is a constant.</p>
+
+<p>So when you wrote:</p>
+
+<pre>function handleClick() {
+  setCount(count + 1);  // count is 0, so this is setCount(1)
+  setCount(count + 1);  // count is still 0, so this is also setCount(1)
+  setCount(count + 1);  // count is still 0, so this is also setCount(1)
+}</pre>
+
+<p>You didn't add 1 three times. You scheduled <em>"set to 1"</em> three times.</p>
+
+<p>React then re-runs your component. On the next call, <code>count</code> is a new constant — this time, it's <code>1</code>.</p>
+
+<div class="snapshots">
+  <div class="snap frozen">
+    <div class="label">render #1</div>
+    <div class="value">count = 0</div>
+  </div>
+  <div class="snap frozen">
+    <div class="label">render #2</div>
+    <div class="value">count = 1</div>
+  </div>
+  <div class="snap">
+    <div class="label">render #3</div>
+    <div class="value">…</div>
+  </div>
+</div>
+
+<p>Each render has its own <code>count</code>. Its own <code>handleClick</code>. Its own everything. They don't share variables — they're separate calls to a function, each with their own local scope.</p>
+
+<hr />
+
+<h2>The mental flip</h2>
+
+<p>If you've written class components, this is the unlearn: <code>this.state.count</code> was a live property on a long-lived object — it changed under your feet. <code>useState</code>'s <code>count</code> is a <em>value</em>, captured in a closure that belongs to one specific render.</p>
+
+<p>If you've never written class components: even better. Just remember — state isn't a variable you mutate. It's a value React hands you, frozen for the duration of this render.</p>
+
+<hr />
+
+<h2>Why interviewers love this</h2>
+
+<p>Because the snapshot model is the root cause of:</p>
+
+<p>· Stale closures inside <code>useEffect</code> (the effect captured an old snapshot)<br />
+· Why <code>useEffect</code> has a dependency array (to detect when the snapshot changed)<br />
+· Why <code>setCount(c =&gt; c + 1)</code> works when <code>setCount(count + 1)</code> doesn't (the updater function reads the latest value, not your frozen one)<br />
+· Why <code>useRef</code> exists (the escape hatch when you need something <em>not</em> frozen)</p>
+
+<p>Each of those is a lesson on its own. They all start here.</p>
+
+<div class="primary-source">
+  <strong>📖 Primary source</strong>
+  <a href="https://react.dev/learn/state-as-a-snapshot" target="_blank">React Docs — "State as a Snapshot"</a>. Read this short page after the lesson. It uses the same model, straight from the source, with an extra worked example. (5 min)
+</div>
+
+<hr />
+
+<div class="quiz" id="quiz">
+  <p class="quiz-title">Check your understanding</p>
+
+  <div class="question" id="q1">
+    <p class="q-text"><strong>1.</strong> Inside one render, what is the <code>count</code> variable?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1,this,false)">A live reference that changes when you call setCount</button>
+      <button class="option" onclick="answer(1,this,true)">A frozen number, constant for this render</button>
+      <button class="option" onclick="answer(1,this,false)">A pointer to a value stored inside React</button>
+      <button class="option" onclick="answer(1,this,false)">A getter that returns the latest state on every read</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p class="q-text"><strong>2.</strong> Why does <code>setCount(count + 1)</code> three times in a row only add 1?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2,this,false)">React deduplicates identical setState calls</button>
+      <button class="option" onclick="answer(2,this,false)">Only the last setState call in a function runs</button>
+      <button class="option" onclick="answer(2,this,true)">All three calls read the same frozen count from this render</button>
+      <button class="option" onclick="answer(2,this,false)">setState is async, so the first two get cancelled</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p class="q-text"><strong>3.</strong> When React re-renders your component, what happens to the previous render's variables?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3,this,false)">They are updated in place with new values</button>
+      <button class="option" onclick="answer(3,this,false)">They become undefined until the next setState</button>
+      <button class="option" onclick="answer(3,this,true)">They no longer exist — the new render is a separate function call with its own scope</button>
+      <button class="option" onclick="answer(3,this,false)">They keep their old values forever, hidden from the new render</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p class="q-text"><strong>4.</strong> Which problem is <em>not</em> a direct consequence of the snapshot model?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4,this,false)">Stale closures inside useEffect</button>
+      <button class="option" onclick="answer(4,this,false)">Multiple setState calls in a row giving the same result</button>
+      <button class="option" onclick="answer(4,this,true)">CSS styles not applying to a component after mount</button>
+      <button class="option" onclick="answer(4,this,false)">Why useEffect needs a dependency array</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="score-area" id="score-area">
+    <p id="score-text"></p>
+  </div>
+</div>
+
+<div class="nav">
+  <p>Something still unclear? <strong>Ask your teacher in the chat</strong> — no question is too basic. The next lesson will use this model to explain stale closures, the most common interview bug.</p>
+</div>
+
+<script>
+  const answered = {};
+  const results  = {};
+
+  const feedback = {
+    1: { ok: "Exactly. Inside one render, count is a plain frozen number — it cannot change mid-render.",
+         err: "Not quite. count is a value, not a reference. Once your component function starts running, count is fixed for that call." },
+    2: { ok: "Right. Each setCount(count + 1) reads the same count from the current render, so all three calls schedule 'set to 1'.",
+         err: "Not quite. React does run all three setState calls — but they all read the same frozen count, so they all schedule the same value." },
+    3: { ok: "Correct. Each render is an independent function call. The old variables are gone; the new render has fresh ones.",
+         err: "Not quite. Renders don't share variables. Each render is a separate function call with its own local scope." },
+    4: { ok: "Right. CSS is unrelated to the snapshot model — it's about how your styles are loaded or scoped.",
+         err: "Not quite. That issue is rooted in the snapshot model. CSS rendering bugs are unrelated — they're about styling, not state." },
+  };
+
+  function answer(q, btn, isCorrect) {
+    if (answered[q]) return;
+    answered[q] = true;
+    results[q] = isCorrect;
+
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => o.disabled = true);
+
+    if (isCorrect) {
+      btn.classList.add('correct');
+      document.getElementById('f' + q).innerHTML = '✓ ' + feedback[q].ok;
+      document.getElementById('f' + q).className = 'feedback ok';
+    } else {
+      btn.classList.add('wrong');
+      document.getElementById('f' + q).innerHTML = '✗ ' + feedback[q].err;
+      document.getElementById('f' + q).className = 'feedback err';
+      opts.forEach(o => {
+        if (o.getAttribute('onclick').includes(', true)')) o.classList.add('reveal');
+      });
+    }
+
+    if (Object.keys(answered).length === 4) showScore();
+  }
+
+  function showScore() {
+    const got = Object.values(results).filter(Boolean).length;
+    const msg = [
+      "Let's go over this together — ask your teacher to walk through the snapshot model again.",
+      "Close. Re-read the 'frozen snapshot' section, then try Lesson 2.",
+      "Solid. Review the one you missed, then move to Lesson 2.",
+      "You've got it. The snapshot model is the foundation. Every hook lesson from here builds on this.",
+    ][got - 1];
+    const area = document.getElementById('score-area');
+    document.getElementById('score-text').innerHTML = `<strong>${got}/4</strong> — ${msg}`;
+    area.classList.add('visible');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 3 — Updater functions</title>
+  <style>
+    :root { --text:#1a1a1a; --muted:#666; --accent:#2563eb; --code-bg:#f5f5f0; --border:#e0e0d8; --correct:#16a34a; --wrong:#dc2626; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; font-size: 18px; line-height: 1.8; color: var(--text); max-width: 640px; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
+    .progress { font-size: 0.78rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+    h1 { font-size: 1.65rem; margin-bottom: 0.2rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.1rem; font-weight: bold; margin: 2.25rem 0 0.6rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+    pre, code { font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 0.875rem; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; overflow-x: auto; margin: 1.1rem 0 1.4rem; line-height: 1.65; }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9rem; }
+    .box { border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.4rem 0; background: #fafaf8; }
+    .box p { margin: 0; }
+    .highlight { border-left: 3px solid var(--accent); background: #eff6ff; border-radius: 0 6px 6px 0; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.25rem 0; }
+    .puzzle { background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 1.1rem 1.3rem; margin: 1.5rem 0; }
+    .puzzle strong { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: #78350f; text-transform: uppercase; letter-spacing: 0.05em; }
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz-title { font-size: 1rem; font-weight: bold; margin-bottom: 1.5rem; }
+    .question { margin-bottom: 2rem; }
+    .question:last-child { margin-bottom: 0; }
+    .q-text { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.45rem; }
+    .option { display: block; width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 0.9rem; background: white; text-align: left; transition: background 0.12s, border-color 0.12s; }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: #14532d; font-weight: bold; }
+    .option.wrong { background: #fee2e2; border-color: var(--wrong); color: #7f1d1d; }
+    .option.reveal { background: #dcfce7; border-color: var(--correct); color: #14532d; opacity: 0.75; }
+    .feedback { font-size: 0.87rem; margin-top: 0.45rem; min-height: 1.2em; }
+    .feedback.ok { color: var(--correct); }
+    .feedback.err { color: var(--wrong); }
+    .score-area { display: none; text-align: center; padding: 0.75rem; margin-top: 1.25rem; border-top: 1px solid var(--border); }
+    .score-area.visible { display: block; }
+    .primary-source { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.9rem 1.1rem; margin: 2rem 0; font-size: 0.9rem; }
+    .primary-source strong { display: block; margin-bottom: 0.2rem; }
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+    .nav a { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 3 &nbsp;·&nbsp; React Hooks &nbsp;·&nbsp; Mental models</p>
+<h1>Updater functions</h1>
+<p class="meta">~5 minutes &nbsp;·&nbsp; One concept only: how to read the latest state without the snapshot</p>
+
+<p>You've seen the snapshot model freeze state per render, and you've seen what stale closures look like. This lesson covers the official escape: <strong>passing a function to <code>setState</code> instead of a value</strong>.</p>
+
+<hr />
+
+<h2>Two ways to call setState</h2>
+
+<pre>setCount(count + 1);          // value form — uses snapshot
+setCount(prev =&gt; prev + 1);   // updater form — uses latest</pre>
+
+<p>They look almost identical. The difference is which <code>count</code> they read.</p>
+
+<hr />
+
+<h2>The one thing to remember</h2>
+
+<div class="box highlight">
+  <p><strong>The updater function receives the most recent state as its argument — whatever React has stored at the moment the update runs. Your closure's frozen <code>count</code> is never consulted.</strong></p>
+</div>
+
+<hr />
+
+<h2>The Counter, fixed</h2>
+
+<p>Recall the puzzle from Lesson 1:</p>
+
+<pre>function handleClick() {
+  setCount(count + 1);
+  setCount(count + 1);
+  setCount(count + 1);
+} // adds 1, because count is frozen</pre>
+
+<p>Switch to the updater form:</p>
+
+<pre>function handleClick() {
+  setCount(prev =&gt; prev + 1);
+  setCount(prev =&gt; prev + 1);
+  setCount(prev =&gt; prev + 1);
+} // adds 3</pre>
+
+<p>Now React runs each updater in order, passing in the result of the previous one: <code>0 → 1 → 2 → 3</code>.</p>
+
+<hr />
+
+<h2>When to reach for it</h2>
+
+<p>Use the updater form whenever the new state depends on the previous state — and your handler or effect might not have the latest value. Three common situations:</p>
+
+<p>· You're calling <code>setState</code> multiple times in a row (the Counter case).<br />
+· You're inside an effect or timer with a stale closure (Lesson 2).<br />
+· You're inside an async callback (a fetch then-handler, an event listener).</p>
+
+<p>If the new state doesn't depend on the old, there's no benefit — <code>setCount(0)</code> and <code>setCount(() =&gt; 0)</code> are equivalent.</p>
+
+<hr />
+
+<h2>The mental model</h2>
+
+<p>The value form is a <em>statement</em>: "set count to this exact value."<br />
+The updater form is a <em>recipe</em>: "however many things are queued before me, take that result and add one."</p>
+
+<p>React keeps a queue of pending updates. The updater form lets each update see the queue's current head — not the frozen value from when the handler was called.</p>
+
+<hr />
+
+<h2>Why interviewers love this</h2>
+
+<p>If you can articulate <em>"updaters escape the snapshot by reading from React's queue, not from the closure"</em>, you're signalling a real mental model. The follow-up is usually: "When would the value form be safer than the updater form?" (Answer: when you want the value frozen on purpose — e.g., grabbing the count at click time even if later updates are pending. Rare, but it happens.)</p>
+
+<div class="primary-source">
+  <strong>📖 Primary source</strong>
+  <a href="https://react.dev/learn/queueing-a-series-of-state-updates" target="_blank">React Docs — "Queueing a Series of State Updates"</a>. The exact mental model from this lesson, with the actual queue visualised. (4 min)
+</div>
+
+<hr />
+
+<div class="quiz" id="quiz">
+  <p class="quiz-title">Check your understanding</p>
+
+  <div class="question" id="q1">
+    <p class="q-text"><strong>1.</strong> What does the argument <code>prev</code> in <code>setCount(prev =&gt; prev + 1)</code> represent?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1,this,false)">The previous render's count from the closure</button>
+      <button class="option" onclick="answer(1,this,true)">The current value of count at the moment this update runs</button>
+      <button class="option" onclick="answer(1,this,false)">The initial value passed to useState</button>
+      <button class="option" onclick="answer(1,this,false)">The current prop named count</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p class="q-text"><strong>2.</strong> After three calls to <code>setCount(prev =&gt; prev + 1)</code> when count starts at 0, what is the new count?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2,this,false)">0</button>
+      <button class="option" onclick="answer(2,this,false)">1</button>
+      <button class="option" onclick="answer(2,this,false)">2</button>
+      <button class="option" onclick="answer(2,this,true)">3</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p class="q-text"><strong>3.</strong> When does the updater form give the same result as the value form?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3,this,false)">Whenever setState is called inside an event handler</button>
+      <button class="option" onclick="answer(3,this,false)">Whenever count is a primitive value</button>
+      <button class="option" onclick="answer(3,this,true)">When the new state does not depend on the previous state</button>
+      <button class="option" onclick="answer(3,this,false)">When the component is rendered exactly once</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p class="q-text"><strong>4.</strong> Which sentence best captures the difference between value form and updater form?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4,this,false)">Value form is synchronous; updater form is asynchronous</button>
+      <button class="option" onclick="answer(4,this,true)">Value form sets a fixed value; updater form computes from the latest state</button>
+      <button class="option" onclick="answer(4,this,false)">Value form skips re-renders; updater form forces them</button>
+      <button class="option" onclick="answer(4,this,false)">Value form is only allowed inside event handlers</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="score-area" id="score-area"><p id="score-text"></p></div>
+</div>
+
+<div class="nav">
+  <p>Something still unclear? <strong>Ask your teacher in the chat</strong>. Next: re-framing <code>useEffect</code> as synchronization, not lifecycle.</p>
+  <p style="margin-top:0.5rem">← <a href="0002-stale-closures.html">Lesson 2</a> &nbsp; · &nbsp; <a href="0004-effects-as-synchronization.html">Lesson 4</a> →</p>
+</div>
+
+<script>
+  const answered = {}, results = {};
+  const feedback = {
+    1: { ok: "Right. The updater receives whatever React has queued or stored at the time it runs — not the closure's snapshot.",
+         err: "Not quite. prev is the latest state at the moment React processes this update — not any closure variable." },
+    2: { ok: "Yes. Each updater reads the previous one's result: 0 → 1 → 2 → 3.",
+         err: "Not quite. With the updater form, each call reads the running result of the queue, so three increments add 3." },
+    3: { ok: "Exactly. If you're not deriving from prev, both forms produce the same result.",
+         err: "Not quite. The forms differ only when you're computing the new state from the old one." },
+    4: { ok: "Right. Value = fixed target. Updater = function applied to whatever the latest state turns out to be.",
+         err: "Not quite. The forms aren't about timing — both schedule an update. They differ in what they read." },
+  };
+  function answer(q, btn, isCorrect) {
+    if (answered[q]) return; answered[q] = true; results[q] = isCorrect;
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => o.disabled = true);
+    if (isCorrect) { btn.classList.add('correct'); document.getElementById('f' + q).innerHTML = '✓ ' + feedback[q].ok; document.getElementById('f' + q).className = 'feedback ok'; }
+    else { btn.classList.add('wrong'); document.getElementById('f' + q).innerHTML = '✗ ' + feedback[q].err; document.getElementById('f' + q).className = 'feedback err';
+      opts.forEach(o => { if (o.getAttribute('onclick').includes(', true)')) o.classList.add('reveal'); }); }
+    if (Object.keys(answered).length === 4) showScore();
+  }
+  function showScore() {
+    const got = Object.values(results).filter(Boolean).length;
+    const msg = ["Let's go over this together — try the queue model.",
+      "Close. Re-read the 'Counter, fixed' section.",
+      "Solid. Review the one you missed, then move to Lesson 4.",
+      "You've got it. Snapshots and updaters are now both clear."][got - 1];
+    const area = document.getElementById('score-area');
+    document.getElementById('score-text').innerHTML = `<strong>${got}/4</strong> — ${msg}`;
+    area.classList.add('visible');
+  }
+</script>
+</body>
+</html>
