@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 1 — The four-step loop: how to not freeze</title>
+  <style>
+    :root {
+      --text: #1a1a1a; --muted: #666; --accent: #2563eb;
+      --code-bg: #f5f5f0; --border: #e0e0d8;
+      --correct: #16a34a; --wrong: #dc2626;
+      --warn-bg: #fefce8; --warn-border: #ca8a04;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 18px; line-height: 1.7; color: var(--text);
+      max-width: 680px; margin: 0 auto; padding: 3rem 1.5rem 6rem;
+    }
+    h1 { font-size: 1.75rem; font-weight: bold; margin-bottom: 0.25rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 2.5rem; font-style: italic; }
+    h2 { font-size: 1.2rem; font-weight: bold; margin: 2.5rem 0 0.75rem; }
+    h3 { font-size: 1.02rem; font-weight: bold; margin: 1.75rem 0 0.5rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+    ul, ol { margin: 0 0 1.1rem 1.4rem; }
+    li { margin-bottom: 0.4rem; }
+
+    pre, code {
+      font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 0.875rem;
+    }
+    pre {
+      background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+      padding: 1rem 1.25rem; overflow-x: auto; margin: 1.25rem 0; line-height: 1.6;
+    }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; }
+
+    .callout {
+      border-left: 3px solid var(--accent); padding: 0.75rem 1rem; margin: 1.5rem 0;
+      background: #eff6ff; border-radius: 0 6px 6px 0;
+    }
+    .callout p { margin: 0; }
+    .warn {
+      border-left: 3px solid var(--warn-border); padding: 0.75rem 1rem; margin: 1.5rem 0;
+      background: var(--warn-bg); border-radius: 0 6px 6px 0;
+    }
+    .warn p { margin: 0; }
+
+    .step-card {
+      border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.35rem;
+      margin: 1.25rem 0; background: #fafaf8;
+    }
+    .step-card .badge {
+      display: inline-block; font-family: 'SF Mono', monospace; font-size: 0.72rem;
+      letter-spacing: 0.05em; color: var(--accent); margin-bottom: 0.3rem;
+    }
+    .step-card h3 { margin: 0 0 0.5rem; }
+    .step-card p:last-child { margin-bottom: 0; }
+
+    /* Quiz */
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz h3 { font-size: 1rem; margin: 0 0 1.25rem; font-weight: bold; }
+    .question { margin-bottom: 1.75rem; }
+    .question p { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option {
+      display: block; padding: 0.6rem 1rem; border: 1px solid var(--border); border-radius: 6px;
+      cursor: pointer; font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; font-size: 0.85rem;
+      background: white; text-align: left; transition: background 0.15s, border-color 0.15s; width: 100%;
+    }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: var(--correct); }
+    .option.wrong { background: #fee2e2; border-color: var(--wrong); color: var(--wrong); }
+    .option.reveal { background: #dcfce7; border-color: var(--correct); color: var(--correct); opacity: 0.7; }
+    .feedback { font-size: 0.88rem; margin-top: 0.5rem; min-height: 1.2em; }
+    .feedback.ok { color: var(--correct); }
+    .feedback.err { color: var(--wrong); }
+    .score-area { display: none; text-align: center; padding: 1rem; }
+    .score-area.visible { display: block; }
+    .score-area p { font-size: 1.1rem; }
+
+    .primary-source {
+      background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px;
+      padding: 1rem 1.25rem; margin: 2rem 0; font-size: 0.92rem;
+    }
+    .primary-source strong { display: block; margin-bottom: 0.25rem; }
+
+    .progress { font-size: 0.8rem; color: var(--muted); margin-bottom: 2rem; letter-spacing: 0.05em; text-transform: uppercase; }
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+    .nav p { font-size: 0.9rem; color: var(--muted); }
+    hr.div { margin: 2.5rem 0; border: none; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 1 of ? &nbsp;·&nbsp; Coding · Problem Solving &nbsp;·&nbsp; The process</p>
+<h1>The four-step loop: how to not freeze</h1>
+<p class="meta">~12 minutes &nbsp;·&nbsp; The single most useful habit for solving any coding problem</p>
+
+<p>You wrote a Fibonacci function and it "seemed not functional." Here's the thing: the bug wasn't really in your code. It was in the <em>order you did things</em>. Almost every beginner does this:</p>
+
+<pre>problem statement  ───►  start typing code  ───►  hope</pre>
+
+<p>That skips the two steps where the actual problem-solving happens. Experienced developers run a loop instead — one that's been taught since 1945, when mathematician George Pólya wrote it down in a little book called <em>How to Solve It</em>. It works for math, for cooking, and for code.</p>
+
+<div class="callout">
+  <p><strong>The loop:</strong> &nbsp;1) Understand &nbsp;→&nbsp; 2) Plan &nbsp;→&nbsp; 3) Code &nbsp;→&nbsp; 4) Look back. &nbsp;Most of your effort belongs in steps 1 and 2 — <em>before</em> you type code.</p>
+</div>
+
+<p>This answers your real questions directly. <strong>Pen/paper vs. digital?</strong> Steps 1–2 are <em>thinking</em>, so do them wherever you think best (paper or plain text) — away from the compiler. <strong>Pseudocode?</strong> That <em>is</em> step 2. <strong>Solving faster?</strong> Counterintuitive but true: slowing down for steps 1–2 makes you faster overall, because you stop writing code that can't work.</p>
+
+<h2>The loop, applied to your Fibonacci problem</h2>
+
+<p>Goal: <em>write <code>fib(n)</code> that returns the nth Fibonacci number</em>. Watch how much happens before any code.</p>
+
+<div class="step-card">
+  <span class="badge">STEP 1 · UNDERSTAND</span>
+  <h3>Restate it, then make examples by hand</h3>
+  <p>In your own words: "each number is the sum of the previous two." But there's an ambiguity that probably broke your code — <strong>where does it start, and is <code>n</code> counted from 0 or 1?</strong> Pin it down by writing examples <em>by hand</em>:</p>
+  <pre>fib(0) = 0
+fib(1) = 1
+fib(2) = 1   (0 + 1)
+fib(3) = 2   (1 + 1)
+fib(4) = 3   (1 + 2)
+fib(5) = 5   (2 + 3)</pre>
+  <p>Edge cases to note now: <code>n = 0</code> and <code>n = 1</code> don't have "two previous" numbers — they're special.</p>
+</div>
+
+<div class="warn">
+  <p><strong>This is the step you skipped.</strong> If you can't write <code>fib(5) = 5</code> by hand, no code will produce it. These six lines are also your test cases for step 4 — for free.</p>
+</div>
+
+<div class="step-card">
+  <span class="badge">STEP 2 · PLAN (PSEUDOCODE)</span>
+  <h3>Write the recipe in plain words — no syntax</h3>
+  <p>Solve <code>fib(5)</code> in your head and notice what you actually do: you keep two numbers and keep adding them. Write that as pseudocode:</p>
+  <pre>if n is 0  → answer is 0
+if n is 1  → answer is 1
+otherwise:
+    prev = 0, curr = 1
+    repeat (n - 1) times:
+        next = prev + curr
+        prev = curr
+        curr = next
+    answer is curr</pre>
+  <p>Notice: no semicolons, no <code>function</code> keyword, no brackets to get wrong. All your attention is on the <em>logic</em>.</p>
+</div>
+
+<div class="step-card">
+  <span class="badge">STEP 3 · CODE</span>
+  <h3>Translate the pseudocode line by line</h3>
+  <p>Now syntax is just transcription. Each pseudocode line becomes a line of JavaScript:</p>
+  <pre>function fib(n) {
+  if (n === 0) return 0;
+  if (n === 1) return 1;
+
+  let prev = 0;
+  let curr = 1;
+  for (let i = 2; i &lt;= n; i++) {
+    const next = prev + curr;
+    prev = curr;
+    curr = next;
+  }
+  return curr;
+}</pre>
+  <p>If a pseudocode line is <em>hard</em> to translate, your plan was too vague — go back to step 2, don't improvise in code.</p>
+</div>
+
+<div class="step-card">
+  <span class="badge">STEP 4 · LOOK BACK</span>
+  <h3>Test against your hand-made examples</h3>
+  <p>Run it against every example from step 1:</p>
+  <pre>console.log(fib(0)); // expect 0
+console.log(fib(1)); // expect 1
+console.log(fib(5)); // expect 5</pre>
+  <p>If one is wrong, <strong>trace it by hand</strong>: walk the loop for that input and find the exact line where reality diverges from your plan. That's debugging — not guessing, not re-typing and hoping.</p>
+</div>
+
+<p>That's the whole skill. The Fibonacci answer is disposable; <strong>the loop is the thing you keep.</strong></p>
+
+<div class="primary-source">
+  <strong>📖 Primary source for this lesson</strong>
+  <a href="https://www.freecodecamp.org/news/how-to-solve-coding-problems/" target="_blank">freeCodeCamp — "How to Solve Coding Problems with a Simple Four Step Method"</a> — Pólya's loop applied to programming, beginner-focused. (~10 min read). On pseudocode specifically, see <a href="https://www.freecodecamp.org/news/what-is-pseudocode-in-programming/" target="_blank">"What is Pseudocode?"</a>
+</div>
+
+<h2>Your turn (do this before the quiz)</h2>
+<p>Pick a fresh, tiny problem — e.g. <em>"return the largest number in an array"</em> — and run all four steps:</p>
+<ol>
+  <li><strong>On paper or in a plain text file</strong>, write 3 examples by hand (include an empty array).</li>
+  <li>Write the pseudocode. <em>Then</em> open your editor.</li>
+  <li>Translate it to JS and test against your 3 examples.</li>
+</ol>
+<p>Try paper for steps 1–2 at least once — notice whether it frees up your thinking. There's no wrong answer; the goal is to feel the difference between <em>thinking</em> and <em>typing</em>. Keep the <a href="../reference/0001-problem-solving-loop.html">one-page loop reference</a> open while you do it.</p>
+
+<hr class="div" />
+
+<div class="quiz" id="quiz">
+  <h3>Check your understanding</h3>
+
+  <div class="question" id="q1">
+    <p><strong>1.</strong> What is the correct order of the four-step loop?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1, this, false)">Code, then understand, then plan, then test</button>
+      <button class="option" onclick="answer(1, this, true)">Understand, then plan, then code, then look back</button>
+      <button class="option" onclick="answer(1, this, false)">Plan, then code, then understand, then look back</button>
+      <button class="option" onclick="answer(1, this, false)">Understand, then code, then plan, then look back</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p><strong>2.</strong> Why write input→output examples by hand before coding?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2, this, false)">It makes the final code run measurably faster</button>
+      <button class="option" onclick="answer(2, this, true)">It proves you understand, and becomes your tests</button>
+      <button class="option" onclick="answer(2, this, false)">It is required by the JavaScript language spec</button>
+      <button class="option" onclick="answer(2, this, false)">It replaces the need to ever run the program</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p><strong>3.</strong> What is pseudocode, and which step uses it?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3, this, false)">Broken code the compiler fixes during step three</button>
+      <button class="option" onclick="answer(3, this, true)">Plain-language steps for the plan in step two</button>
+      <button class="option" onclick="answer(3, this, false)">A faster dialect of JavaScript for the coding step</button>
+      <button class="option" onclick="answer(3, this, false)">Comments you add while looking back in step four</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p><strong>4.</strong> Your code gives a wrong answer for one input. Best next move?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4, this, false)">Rewrite the whole function in a different style</button>
+      <button class="option" onclick="answer(4, this, false)">Add random changes until the output looks right</button>
+      <button class="option" onclick="answer(4, this, true)">Trace that input by hand to find the wrong line</button>
+      <button class="option" onclick="answer(4, this, false)">Delete the failing test so it stops failing now</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="question" id="q5">
+    <p><strong>5.</strong> Why do steps 1 and 2 belong away from the editor (paper/text)?</p>
+    <div class="options">
+      <button class="option" onclick="answer(5, this, false)">Editors are too slow to open for quick problems</button>
+      <button class="option" onclick="answer(5, this, true)">They are thinking, so syntax should not distract</button>
+      <button class="option" onclick="answer(5, this, false)">Paper notes run automatically against the test cases</button>
+      <button class="option" onclick="answer(5, this, false)">It is the only way pseudocode can be written down</button>
+    </div>
+    <p class="feedback" id="f5"></p>
+  </div>
+
+  <div class="score-area" id="score-area">
+    <p id="score-text"></p>
+  </div>
+</div>
+
+<div class="nav">
+  <p>← First lesson &nbsp;·&nbsp; <a href="../../../index.html">Home</a> &nbsp;·&nbsp; <a href="0002-what-makes-solvers-great.html">Lesson 2 — What makes solvers great →</a></p>
+  <p style="margin-top:0.5rem">Reference: <a href="../reference/0001-problem-solving-loop.html">The four-step loop (one-pager)</a></p>
+  <p style="margin-top:0.5rem">Have a question? <strong>Ask your teacher</strong> in the chat — that's what they're there for.</p>
+</div>
+
+<script>
+  const answers = {};
+  const correct = { 1: false, 2: false, 3: false, 4: false, 5: false };
+  const total = 5;
+
+  const feedbacks = {
+    1: { ok: "Right. Understand → Plan → Code → Look back. The thinking comes before the typing.",
+         err: "Not quite. It's Understand → Plan → Code → Look back — code is the third step, not the first." },
+    2: { ok: "Exactly. If you can write the example, you understand the problem — and those examples become your test cases for free.",
+         err: "Not quite. Examples prove you understand the problem and double as your tests in step four." },
+    3: { ok: "Correct. Pseudocode is the plan written in plain language (step two), so syntax never gets in the way of logic.",
+         err: "Not quite. Pseudocode is plain-language planning — that's step two, before you write real code." },
+    4: { ok: "Right. Trace the failing input by hand to find the exact line where the code diverges from your plan.",
+         err: "Not quite. Tracing the failing input by hand pinpoints the bug; random edits or deleting tests just hide it." },
+    5: { ok: "Right. Steps 1–2 are pure thinking, so you keep the compiler's syntax demands out of your working memory.",
+         err: "Not quite. The point is that steps 1–2 are thinking — keeping syntax away frees your attention for logic." }
+  };
+
+  function answer(qNum, btn, isCorrect) {
+    if (answers[qNum] !== undefined) return;
+    answers[qNum] = isCorrect;
+    correct[qNum] = isCorrect;
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => { o.disabled = true; });
+    if (isCorrect) {
+      btn.classList.add('correct');
+      document.getElementById('f' + qNum).innerHTML = '✓ ' + feedbacks[qNum].ok;
+      document.getElementById('f' + qNum).className = 'feedback ok';
+    } else {
+      btn.classList.add('wrong');
+      document.getElementById('f' + qNum).innerHTML = '✗ ' + feedbacks[qNum].err;
+      document.getElementById('f' + qNum).className = 'feedback err';
+      opts.forEach(o => { if (o.onclick.toString().includes(', true)')) o.classList.add('reveal'); });
+    }
+    if (Object.keys(answers).length === total) showScore();
+  }
+
+  function showScore() {
+    const got = Object.values(correct).filter(Boolean).length;
+    const scoreArea = document.getElementById('score-area');
+    scoreArea.classList.add('visible');
+    const msgs = [
+      "Re-read the four step cards above, then try again.",
+      "Getting there — revisit the steps you missed.",
+      "Halfway. Look back at the cards for the missed steps.",
+      "Solid. The loop is landing.",
+      "Strong. Now go run the loop on a real problem.",
+      "Perfect. You've got the loop — make it a habit."
+    ];
+    document.getElementById('score-text').innerHTML =
+      `<strong>${got}/${total}</strong> — ${msgs[got] || msgs[0]}`;
+  }
+</script>
+</body>
+</html>

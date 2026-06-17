@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 2 — What makes solvers great (and how a web dev gets there)</title>
+  <style>
+    :root {
+      --text: #1a1a1a; --muted: #666; --accent: #2563eb;
+      --code-bg: #f5f5f0; --border: #e0e0d8;
+      --correct: #16a34a; --wrong: #dc2626;
+      --warn-bg: #fefce8; --warn-border: #ca8a04;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 18px; line-height: 1.7; color: var(--text);
+      max-width: 680px; margin: 0 auto; padding: 3rem 1.5rem 6rem;
+    }
+    h1 { font-size: 1.7rem; font-weight: bold; margin-bottom: 0.25rem; line-height: 1.25; }
+    .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 2.5rem; font-style: italic; }
+    h2 { font-size: 1.2rem; font-weight: bold; margin: 2.5rem 0 0.75rem; }
+    h3 { font-size: 1.02rem; font-weight: bold; margin: 1.75rem 0 0.5rem; }
+    p { margin-bottom: 1.1rem; }
+    a { color: var(--accent); }
+    ul, ol { margin: 0 0 1.1rem 1.4rem; }
+    li { margin-bottom: 0.4rem; }
+    strong em, em strong { font-style: italic; }
+
+    pre, code { font-family: 'SF Mono','Fira Code','Menlo',monospace; font-size: 0.875rem; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.25rem; overflow-x: auto; margin: 1.25rem 0; line-height: 1.6; }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; }
+
+    .callout { border-left: 3px solid var(--accent); padding: 0.75rem 1rem; margin: 1.5rem 0; background: #eff6ff; border-radius: 0 6px 6px 0; }
+    .callout p { margin: 0; }
+    .warn { border-left: 3px solid var(--warn-border); padding: 0.75rem 1rem; margin: 1.5rem 0; background: var(--warn-bg); border-radius: 0 6px 6px 0; }
+    .warn p { margin: 0; }
+
+    .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1.25rem 0; }
+    .twocol .box { border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem 1.1rem; background: #fafaf8; }
+    .twocol .box h4 { font-size: 0.9rem; margin-bottom: 0.4rem; }
+    .twocol .box p { font-size: 0.85rem; margin: 0; color: var(--muted); }
+    @media (max-width: 520px) { .twocol { grid-template-columns: 1fr; } }
+
+    .community { background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px; padding: 1rem 1.25rem; margin: 2rem 0; font-size: 0.92rem; }
+    .community strong { display: block; margin-bottom: 0.25rem; }
+
+    /* Quiz */
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz h3 { font-size: 1rem; margin: 0 0 1.25rem; font-weight: bold; }
+    .question { margin-bottom: 1.75rem; }
+    .question p { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option { display: block; padding: 0.6rem 1rem; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: 'SF Mono','Fira Code','Menlo',monospace; font-size: 0.85rem; background: white; text-align: left; transition: background 0.15s, border-color 0.15s; width: 100%; }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: var(--correct); }
+    .option.wrong { background: #fee2e2; border-color: var(--wrong); color: var(--wrong); }
+    .option.reveal { background: #dcfce7; border-color: var(--correct); color: var(--correct); opacity: 0.7; }
+    .feedback { font-size: 0.88rem; margin-top: 0.5rem; min-height: 1.2em; }
+    .feedback.ok { color: var(--correct); } .feedback.err { color: var(--wrong); }
+    .score-area { display: none; text-align: center; padding: 1rem; } .score-area.visible { display: block; } .score-area p { font-size: 1.1rem; }
+
+    .primary-source { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 1rem 1.25rem; margin: 2rem 0; font-size: 0.92rem; }
+    .primary-source strong { display: block; margin-bottom: 0.25rem; }
+
+    .progress { font-size: 0.8rem; color: var(--muted); margin-bottom: 2rem; letter-spacing: 0.05em; text-transform: uppercase; }
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+    .nav p { font-size: 0.9rem; color: var(--muted); }
+    hr.div { margin: 2.5rem 0; border: none; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 2 of ? &nbsp;·&nbsp; Coding · Problem Solving &nbsp;·&nbsp; The long arc</p>
+<h1>What makes solvers great — and how a web dev gets there</h1>
+<p class="meta">~12 minutes &nbsp;·&nbsp; The mindset and mechanism behind expertise</p>
+
+<p>You asked the real question: <em>what actually makes someone great at solving problems — and how does a web dev become the best?</em> The honest, research-backed answer is freeing, because it means greatness is <strong>built, not born</strong>.</p>
+
+<h2>Myth 1: great solvers are just "smarter" or faster</h2>
+
+<p>The classic evidence is from chess. Researchers showed expert and novice players a board for a few seconds, then asked them to reconstruct it. Experts were <em>dramatically</em> better — but only when the pieces formed a <strong>real game position</strong>. With random pieces, experts were no better than beginners.</p>
+
+<div class="callout">
+  <p><strong>The key finding:</strong> experts don't have better memory or faster brains. They've stored thousands of <em>patterns</em> — called <strong>chunks</strong> — so they perceive a meaningful position as a few familiar units, not 25 separate pieces. <a href="https://www.lrdc.pitt.edu/schunn/papers/Nokes,%20Schunn,%20&%20Chi,%202010.pdf" target="_blank">(Nokes, Schunn &amp; Chi, 2010)</a></p>
+</div>
+
+<p>This is exactly what's happening when a senior dev glances at a bug and says "oh, that's a stale-closure issue." They're not thinking faster — they're <em>recognizing a pattern</em> they've seen a hundred times. Speed is a side effect of a big pattern library.</p>
+
+<h2>Myth 2: you build that library just by "doing it a lot"</h2>
+
+<p>Not quite. Doing the same comfortable thing repeatedly makes you <em>fluent</em>, not <em>expert</em>. The thing that actually grows your pattern library is <strong>deliberate practice</strong>, defined by the researcher who coined it:</p>
+
+<div class="callout">
+  <p>"…not just doing it again and again, but <strong>challenging yourself with a task just beyond your current ability</strong>, trying it, analyzing your performance while and after doing it, and correcting any mistakes." <a href="https://norvig.com/21-days.html" target="_blank">(Peter Norvig, paraphrasing Ericsson)</a></p>
+</div>
+
+<div class="twocol">
+  <div class="box">
+    <h4>Ordinary practice</h4>
+    <p>Re-do what you can already do. Vague goal. Feedback is late. Comfortable autopilot.</p>
+  </div>
+  <div class="box">
+    <h4>Deliberate practice</h4>
+    <p>Task just past your ability. One specific target. Immediate feedback. Effortful focus, then fix the gap.</p>
+  </div>
+</div>
+
+<p>Every problem you solve <em>deliberately</em> — using the <a href="0001-the-four-step-loop.html">four-step loop</a> and then analyzing where you got stuck — deposits a new chunk. That's the link between Lesson 1 and greatness: <strong>the loop is the rep; deliberateness is what makes the rep count.</strong></p>
+
+<div class="warn">
+  <p><strong>The uncomfortable part:</strong> if a practice session felt easy and smooth, it probably didn't build much. Productive practice feels effortful. That "stuck" feeling is the sensation of learning happening.</p>
+</div>
+
+<h2>Myth 3: there's a shortcut</h2>
+
+<p>Across chess, music, sport, and programming, research keeps finding the same thing: real expertise takes on the order of <strong>ten years</strong> of sustained, deliberate practice <a href="https://www.ida.liu.se/~nilda08/Anders_Ericsson/Ericsson_delib_pract.pdf" target="_blank">(Ericsson et al., 1993)</a>. That's not discouraging — it's permission to stop expecting to "get it" in a weekend, and to start compounding instead.</p>
+
+<h2>So: how does a <em>web dev</em> become the best?</h2>
+
+<p>Norvig's essay gives a concrete recipe. The distilled, web-dev version:</p>
+
+<ul>
+  <li><strong>Build real things.</strong> Learning by doing beats reading. Ship small projects with real users.</li>
+  <li><strong>Read other people's code.</strong> Open the source of a library you use daily. Patterns transfer into your library.</li>
+  <li><strong>Work <em>with</em> and <em>after</em> other programmers.</strong> Collaborate; also maintain code you didn't write — that's where deep understanding forms.</li>
+  <li><strong>Learn several paradigms,</strong> not just one framework — OO, functional, declarative. Frameworks expire; paradigms compound.</li>
+  <li><strong>Get fast, honest feedback.</strong> Tests, code review, a mentor, a community. Feedback is the engine of deliberate practice.</li>
+</ul>
+
+<div class="callout">
+  <p><strong>The whole thing in one sentence:</strong> become great by repeatedly solving problems <em>just past your ability</em>, getting <em>immediate feedback</em>, and <em>analyzing every mistake</em> — for years. Talent is mostly the name we give to that process after the fact.</p>
+</div>
+
+<div class="primary-source">
+  <strong>📖 Primary source for this lesson</strong>
+  <a href="https://norvig.com/21-days.html" target="_blank">Peter Norvig — "Teach Yourself Programming in Ten Years"</a> — short, classic, and written by Google's former Director of Research. Read it once a year. (~10 min)
+</div>
+
+<div class="community">
+  <strong>🌍 Where to test this (wisdom, not just knowledge)</strong>
+  Deliberate practice needs feedback from real people. Try <a href="https://exercism.org/tracks/javascript" target="_blank">Exercism (JavaScript track)</a> — free human mentors who review your <em>approach</em>, not just whether it passes. For discussion, <a href="https://www.reddit.com/r/learnprogramming/" target="_blank">r/learnprogramming</a> rewards showing your thinking.
+</div>
+
+<h2>Your turn: design one deliberate-practice rep</h2>
+<p>On paper or in a note, fill these four blanks for your <em>next</em> coding session:</p>
+<ol>
+  <li><strong>Target</strong> — one skill just past your current ability (e.g. "solve a problem without using <code>console.log</code> to debug").</li>
+  <li><strong>Problem</strong> — a specific task that forces that skill.</li>
+  <li><strong>Feedback</strong> — how you'll know immediately if you're right (tests? a peer? the error message?).</li>
+  <li><strong>Review</strong> — after, write the one pattern you'll remember next time (your new chunk).</li>
+</ol>
+<p>Keep the <a href="../reference/0002-deliberate-practice.html">deliberate-practice one-pager</a> next to you.</p>
+
+<hr class="div" />
+
+<div class="quiz" id="quiz">
+  <h3>Check your understanding</h3>
+
+  <div class="question" id="q1">
+    <p><strong>1.</strong> In the chess studies, why did experts recall real positions far better?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1, this, false)">They simply had much faster working memory</button>
+      <button class="option" onclick="answer(1, this, true)">They saw the board as familiar grouped chunks</button>
+      <button class="option" onclick="answer(1, this, false)">They were allowed to study the board longer</button>
+      <button class="option" onclick="answer(1, this, false)">They had naturally higher general intelligence</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p><strong>2.</strong> What separates deliberate practice from ordinary practice?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2, this, false)">It uses many more total hours each week</button>
+      <button class="option" onclick="answer(2, this, true)">It stretches past ability with immediate feedback</button>
+      <button class="option" onclick="answer(2, this, false)">It avoids mistakes by staying inside comfort</button>
+      <button class="option" onclick="answer(2, this, false)">It relies on talent rather than on effort</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p><strong>3.</strong> A practice session felt smooth and easy. What does that suggest?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3, this, false)">You have clearly mastered every related skill</button>
+      <button class="option" onclick="answer(3, this, true)">It likely built little; raise the difficulty</button>
+      <button class="option" onclick="answer(3, this, false)">You should immediately repeat that same task</button>
+      <button class="option" onclick="answer(3, this, false)">Your pattern library grew faster than usual</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p><strong>4.</strong> Which best matches Norvig's advice for becoming a great developer?</p>
+    <div class="options">
+      <button class="option" onclick="answer(4, this, false)">Master one framework and only ever use that</button>
+      <button class="option" onclick="answer(4, this, true)">Build, read others' code, learn many paradigms</button>
+      <button class="option" onclick="answer(4, this, false)">Read many books before writing any real code</button>
+      <button class="option" onclick="answer(4, this, false)">Work alone so nobody slows your progress down</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="question" id="q5">
+    <p><strong>5.</strong> How does the four-step loop relate to becoming an expert?</p>
+    <div class="options">
+      <button class="option" onclick="answer(5, this, false)">It replaces the need for any further practice</button>
+      <button class="option" onclick="answer(5, this, true)">Each deliberate run deposits a reusable pattern</button>
+      <button class="option" onclick="answer(5, this, false)">It matters only for very hard rare problems</button>
+      <button class="option" onclick="answer(5, this, false)">It works without any feedback or any review</button>
+    </div>
+    <p class="feedback" id="f5"></p>
+  </div>
+
+  <div class="score-area" id="score-area"><p id="score-text"></p></div>
+</div>
+
+<div class="nav">
+  <p><a href="0001-the-four-step-loop.html">← Lesson 1 — The four-step loop</a> &nbsp;·&nbsp; <a href="../../../index.html">Home</a> &nbsp;·&nbsp; <a href="0003-the-practice-stack.html">Lesson 3 — The practice stack →</a></p>
+  <p style="margin-top:0.5rem">Reference: <a href="../reference/0002-deliberate-practice.html">Deliberate practice (one-pager)</a></p>
+  <p style="margin-top:0.5rem">Have a question? <strong>Ask your teacher</strong> in the chat — that's what they're there for.</p>
+</div>
+
+<script>
+  const answers = {};
+  const correct = { 1:false, 2:false, 3:false, 4:false, 5:false };
+  const total = 5;
+  const feedbacks = {
+    1: { ok: "Right. Experts encode meaningful positions as a few familiar chunks — and the advantage vanished with random boards.",
+         err: "Not quite. The advantage came from recognizing familiar chunks; it disappeared when boards were random, ruling out raw memory or IQ." },
+    2: { ok: "Exactly. Deliberate practice means working just past your ability with immediate feedback and error analysis — not just more hours.",
+         err: "Not quite. It's about stretching past your current ability with immediate feedback, not sheer volume or staying comfortable." },
+    3: { ok: "Right. Smooth and easy usually means you stayed inside your comfort zone — increase the difficulty next time.",
+         err: "Not quite. Easy sessions build little; productive practice feels effortful, so raise the difficulty." },
+    4: { ok: "Correct. Build real things, read others' code, collaborate, and learn multiple paradigms over years.",
+         err: "Not quite. Norvig urges building, reading others' code, collaborating, and learning several paradigms — not isolation or one framework." },
+    5: { ok: "Right. Run deliberately, the loop turns each solved problem into a stored pattern you can reuse.",
+         err: "Not quite. The loop is the rep: done deliberately with feedback and review, each run deposits a reusable pattern." }
+  };
+  function answer(qNum, btn, isCorrect) {
+    if (answers[qNum] !== undefined) return;
+    answers[qNum] = isCorrect; correct[qNum] = isCorrect;
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => { o.disabled = true; });
+    if (isCorrect) {
+      btn.classList.add('correct');
+      document.getElementById('f'+qNum).innerHTML = '✓ ' + feedbacks[qNum].ok;
+      document.getElementById('f'+qNum).className = 'feedback ok';
+    } else {
+      btn.classList.add('wrong');
+      document.getElementById('f'+qNum).innerHTML = '✗ ' + feedbacks[qNum].err;
+      document.getElementById('f'+qNum).className = 'feedback err';
+      opts.forEach(o => { if (o.onclick.toString().includes(', true)')) o.classList.add('reveal'); });
+    }
+    if (Object.keys(answers).length === total) showScore();
+  }
+  function showScore() {
+    const got = Object.values(correct).filter(Boolean).length;
+    document.getElementById('score-area').classList.add('visible');
+    const msgs = [
+      "Re-read the three myths above, then try again.",
+      "Getting there — revisit the points you missed.",
+      "Halfway. Look back at deliberate practice vs ordinary.",
+      "Solid grasp of the mechanism.",
+      "Strong — now go design one real rep.",
+      "Perfect. You understand how greatness is actually built."
+    ];
+    document.getElementById('score-text').innerHTML = `<strong>${got}/${total}</strong> — ${msgs[got] || msgs[0]}`;
+  }
+</script>
+</body>
+</html>

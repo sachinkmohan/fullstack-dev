@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — The Four-Step Problem-Solving Loop</title>
+  <style>
+    :root {
+      --text: #1a1a1a; --muted: #666; --accent: #2563eb;
+      --code-bg: #f5f5f0; --border: #d8d8d0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      color: var(--text); line-height: 1.55;
+      max-width: 760px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem;
+      background: #fafaf8;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.2rem; }
+    .sub { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 1.75rem; }
+    .step {
+      border: 1px solid var(--border); border-radius: 8px;
+      background: white; padding: 1rem 1.25rem; margin-bottom: 0.9rem;
+      page-break-inside: avoid;
+    }
+    .step h2 { font-size: 1.05rem; margin-bottom: 0.4rem; }
+    .step .num {
+      font-family: 'SF Mono', monospace; font-size: 0.8rem;
+      color: var(--accent); letter-spacing: 0.05em;
+    }
+    .step .goal { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 0.5rem; }
+    ul { margin: 0.3rem 0 0 1.2rem; }
+    li { font-size: 0.92rem; margin-bottom: 0.25rem; }
+    .tip { font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem; }
+    code {
+      font-family: 'SF Mono', 'Menlo', monospace; font-size: 0.82rem;
+      background: var(--code-bg); padding: 0.08em 0.3em; border-radius: 3px;
+    }
+    .medium-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.85rem; }
+    .medium-table th, .medium-table td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .medium-table th { color: var(--muted); font-weight: normal; font-style: italic; }
+    .rule { font-size: 0.95rem; background: #eff6ff; border-left: 3px solid var(--accent); padding: 0.6rem 0.9rem; border-radius: 0 6px 6px 0; margin: 1.5rem 0; }
+    footer { margin-top: 2rem; font-size: 0.8rem; color: var(--muted); }
+    a { color: var(--accent); }
+    @media print { body { background: white; } .step { box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <h1>The Four-Step Problem-Solving Loop</h1>
+  <p class="sub">Quick reference · based on Pólya, <em>How to Solve It</em> · keep this next to you while solving</p>
+
+  <div class="rule"><strong>The one rule:</strong> Most of your time goes <em>before</em> you write code. If you're typing syntax and you don't yet know the answer in plain words, stop and go back to step 1 or 2.</div>
+
+  <div class="step">
+    <span class="num">STEP 1</span>
+    <h2>Understand the problem</h2>
+    <p class="goal">Goal: be able to explain it to a friend, with examples.</p>
+    <ul>
+      <li>Restate the problem in your <strong>own words</strong>.</li>
+      <li>What exactly is the <strong>input</strong>? What exactly is the <strong>output</strong>?</li>
+      <li>Write <strong>3+ concrete examples</strong> by hand: <code>input → output</code>.</li>
+      <li>List the <strong>edge cases</strong> (empty, zero, one, negative, very large).</li>
+      <li>Resolve ambiguities (e.g. is the count 0-indexed or 1-indexed?).</li>
+    </ul>
+    <p class="tip">If you can't write an example by hand, you don't understand it yet — and no code will.</p>
+  </div>
+
+  <div class="step">
+    <span class="num">STEP 2</span>
+    <h2>Make a plan (pseudocode)</h2>
+    <p class="goal">Goal: a step-by-step recipe in plain language, no syntax.</p>
+    <ul>
+      <li>Solve <strong>one small example by hand</strong> and watch what <em>you</em> do.</li>
+      <li>Write those steps as <strong>pseudocode</strong> — plain English, indented.</li>
+      <li>Ask: "have I solved something like this before?"</li>
+      <li>Break a big problem into <strong>smaller sub-problems</strong>.</li>
+    </ul>
+    <p class="tip">Pseudocode keeps syntax out of your head so all your attention is on the logic.</p>
+  </div>
+
+  <div class="step">
+    <span class="num">STEP 3</span>
+    <h2>Carry out the plan (code it)</h2>
+    <p class="goal">Goal: translate pseudocode, one line at a time.</p>
+    <ul>
+      <li>Turn each pseudocode line into one or two lines of code.</li>
+      <li>Keep it <strong>simple and mechanical</strong> — clever comes later.</li>
+      <li>If a step is too hard to translate, the plan was too vague → back to step 2.</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <span class="num">STEP 4</span>
+    <h2>Look back (test &amp; reflect)</h2>
+    <p class="goal">Goal: prove it works, then learn from it.</p>
+    <ul>
+      <li>Run the code against <strong>every example from step 1</strong>.</li>
+      <li>Trace the failing case <strong>by hand</strong> to find where reality diverges from your plan.</li>
+      <li>Read the error message — it usually names the file, line, and cause.</li>
+      <li>Ask: can it be <strong>simpler or clearer</strong>? What did I learn for next time?</li>
+    </ul>
+    <p class="tip">This step is where "my code seemed not functional" gets diagnosed instead of guessed at.</p>
+  </div>
+
+  <h2 style="font-size:1.05rem; margin:1.75rem 0 0.4rem;">Which medium for which step?</h2>
+  <table class="medium-table">
+    <tr><th>Step</th><th>Best medium</th><th>Why</th></tr>
+    <tr><td>1 Understand</td><td>Pen &amp; paper / plain notes</td><td>Free-form; draw examples &amp; arrows fast</td></tr>
+    <tr><td>2 Plan</td><td>Pen &amp; paper or plain text</td><td>No compiler nagging about syntax</td></tr>
+    <tr><td>3 Code</td><td>Editor</td><td>Autocomplete, run, real feedback</td></tr>
+    <tr><td>4 Look back</td><td>Editor + paper for tracing</td><td>Run in editor; trace bugs on paper</td></tr>
+  </table>
+
+  <footer>
+    Lesson: <a href="../lessons/0001-the-four-step-loop.html">The four-step loop</a> ·
+    Sources: <a href="https://www.freecodecamp.org/news/how-to-solve-coding-problems/" target="_blank">freeCodeCamp</a>,
+    <a href="https://www.ms.uky.edu/~lee/ma310sp15/polya.pdf" target="_blank">Pólya's four phases</a>
+  </footer>
+</body>
+</html>

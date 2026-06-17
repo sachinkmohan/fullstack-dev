@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 3 — Stop practicing randomly: the practice stack</title>
+  <style>
+    :root {
+      --text:#1a1a1a; --muted:#666; --accent:#2563eb; --code-bg:#f5f5f0; --border:#e0e0d8;
+      --correct:#16a34a; --wrong:#dc2626; --warn-bg:#fefce8; --warn-border:#ca8a04;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia,'Times New Roman',serif; font-size: 18px; line-height: 1.7; color: var(--text); max-width: 680px; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+    h1 { font-size: 1.7rem; font-weight: bold; margin-bottom: 0.25rem; line-height: 1.25; }
+    .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 2.5rem; font-style: italic; }
+    h2 { font-size: 1.2rem; font-weight: bold; margin: 2.5rem 0 0.75rem; }
+    h3 { font-size: 1.02rem; font-weight: bold; margin: 1.5rem 0 0.4rem; }
+    p { margin-bottom: 1.1rem; } a { color: var(--accent); }
+    ul, ol { margin: 0 0 1.1rem 1.4rem; } li { margin-bottom: 0.4rem; }
+    pre, code { font-family:'SF Mono','Fira Code','Menlo',monospace; font-size: 0.875rem; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.25rem; overflow-x: auto; margin: 1.25rem 0; line-height: 1.6; }
+    code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; }
+    .callout { border-left: 3px solid var(--accent); padding: 0.75rem 1rem; margin: 1.5rem 0; background: #eff6ff; border-radius: 0 6px 6px 0; }
+    .callout p { margin: 0; }
+    .warn { border-left: 3px solid var(--warn-border); padding: 0.75rem 1rem; margin: 1.5rem 0; background: var(--warn-bg); border-radius: 0 6px 6px 0; }
+    .warn p { margin: 0; }
+
+    .rung { border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin: 0.9rem 0; background: #fafaf8; }
+    .rung .tag { display: inline-block; font-family:'SF Mono',monospace; font-size: 0.7rem; letter-spacing: 0.05em; color: var(--accent); margin-bottom: 0.25rem; }
+    .rung h3 { margin: 0 0 0.3rem; }
+    .rung p { font-size: 0.9rem; margin: 0 0 0.4rem; }
+    .rung .where { font-size: 0.85rem; color: var(--muted); }
+    .rung.highlight { border-color: var(--accent); background: #eff6ff; }
+
+    .you-are-here { background:#ecfdf5; border:1px solid #6ee7b7; border-radius:8px; padding:0.9rem 1.1rem; margin:1.5rem 0; font-size:0.9rem; }
+    .you-are-here strong { color:#047857; }
+
+    .community { background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px; padding: 1rem 1.25rem; margin: 2rem 0; font-size: 0.92rem; }
+    .community strong { display: block; margin-bottom: 0.25rem; }
+
+    .quiz { border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin: 2.5rem 0; background: #fafaf8; }
+    .quiz h3 { font-size: 1rem; margin: 0 0 1.25rem; font-weight: bold; }
+    .question { margin-bottom: 1.75rem; }
+    .question p { font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option { display: block; padding: 0.6rem 1rem; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family:'SF Mono','Fira Code','Menlo',monospace; font-size: 0.85rem; background: white; text-align: left; transition: background 0.15s, border-color 0.15s; width: 100%; }
+    .option:hover:not(:disabled) { background: #eff6ff; border-color: var(--accent); }
+    .option.correct { background: #dcfce7; border-color: var(--correct); color: var(--correct); }
+    .option.wrong { background: #fee2e2; border-color: var(--wrong); color: var(--wrong); }
+    .option.reveal { background: #dcfce7; border-color: var(--correct); color: var(--correct); opacity: 0.7; }
+    .feedback { font-size: 0.88rem; margin-top: 0.5rem; min-height: 1.2em; }
+    .feedback.ok { color: var(--correct); } .feedback.err { color: var(--wrong); }
+    .score-area { display: none; text-align: center; padding: 1rem; } .score-area.visible { display: block; } .score-area p { font-size: 1.1rem; }
+
+    .primary-source { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 1rem 1.25rem; margin: 2rem 0; font-size: 0.92rem; }
+    .primary-source strong { display: block; margin-bottom: 0.25rem; }
+    .progress { font-size: 0.8rem; color: var(--muted); margin-bottom: 2rem; letter-spacing: 0.05em; text-transform: uppercase; }
+    .nav { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+    .nav p { font-size: 0.9rem; color: var(--muted); }
+    hr.div { margin: 2.5rem 0; border: none; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<p class="progress">Lesson 3 of ? &nbsp;·&nbsp; Coding · Problem Solving &nbsp;·&nbsp; What to practice</p>
+<h1>Stop practicing randomly: the practice stack</h1>
+<p class="meta">~12 minutes &nbsp;·&nbsp; For an intermediate dev (≈2.5 yrs) aiming at full-stack</p>
+
+<p>You're doing the right <em>activity</em> — practicing — but in the way that wastes the most effort: <strong>randomly</strong>. Random Codewars katas mostly retest fluency you already have, and rarely land on the edge of your ability, which is the <em>only</em> place deliberate practice works <a href="0002-what-makes-solvers-great.html">(Lesson 2)</a>.</p>
+
+<div class="callout">
+  <p><strong>The evidence:</strong> learners who practice <em>by pattern</em> rather than randomly report dramatically higher success — one analysis cites roughly <strong>85% vs 35%</strong>. <a href="https://www.designgurus.io/blog/top-lc-patterns" target="_blank">(DesignGurus)</a> Random reps feel productive; patterned reps actually build the library.</p>
+</div>
+
+<h2>The second mistake: katas ≠ full-stack</h2>
+<p>Codewars and LeetCode train <em>one</em> muscle: language fluency and algorithmic patterns. That matters — but a full-stack developer also needs to build UIs, wire up APIs and databases, handle auth, deploy, and debug real systems. No amount of katas teaches those. You have to <strong>match the practice type to the skill you're leveling.</strong></p>
+
+<p>Think of it as a <strong>stack of rungs</strong>. Each trains a different layer of "full-stack."</p>
+
+<div class="rung">
+  <span class="tag">RUNG 1 · LANGUAGE FLUENCY</span>
+  <h3>Idiomatic JS/TS &amp; small algorithms</h3>
+  <p>Syntax reflexes and clean, idiomatic code. This is what Codewars trains — fine as a <em>warm-up</em>, but you've largely got this after 2.5 years.</p>
+  <p class="where">Where: <a href="https://exercism.org/tracks/javascript" target="_blank">Exercism</a> (free human mentor review of your <em>approach</em>) · <a href="https://www.codewars.com/" target="_blank">Codewars</a> in focused sets.</p>
+</div>
+
+<div class="rung">
+  <span class="tag">RUNG 2 · DATA STRUCTURES &amp; ALGORITHMS</span>
+  <h3>Patterns, not random problems</h3>
+  <p>Two pointers, sliding window, hash-map lookups, recursion. Do <strong>3–5 problems per pattern</strong> back-to-back so the pattern becomes a chunk — don't shuffle.</p>
+  <p class="where">Where: <a href="https://seanprashad.com/leetcode-patterns/" target="_blank">LeetCode Patterns (Sean Prashad)</a> · <a href="https://neetcode.io/practice" target="_blank">NeetCode 150</a>.</p>
+</div>
+
+<div class="rung">
+  <span class="tag">RUNG 3 · FRONTEND BUILD</span>
+  <h3>Real designs → working UI</h3>
+  <p>Turn professional design briefs into responsive, accessible interfaces. Sharpens the "F" half of full-stack with realistic constraints.</p>
+  <p class="where">Where: <a href="https://www.frontendmentor.io/" target="_blank">Frontend Mentor</a>.</p>
+</div>
+
+<div class="rung highlight">
+  <span class="tag">RUNG 4 · REAL APPS — YOUR BIGGEST LEVER</span>
+  <h3>End-to-end integration</h3>
+  <p>API + database + auth + deploy + debugging a system you built. This is where "intermediate" becomes "full-stack." Ship small, real projects; rebuild real software to understand it.</p>
+  <p class="where">Where: <a href="https://github.com/codecrafters-io/build-your-own-x" target="_blank">build-your-own-x</a> · your own shipped side projects.</p>
+</div>
+
+<div class="rung">
+  <span class="tag">RUNG 5 · READ &amp; CONTRIBUTE</span>
+  <h3>Other people's code</h3>
+  <p>Read the source of a library you use; fix a small open-source issue. Deposits senior-level chunks — architecture, conventions, trade-offs. This is the long arc <a href="https://norvig.com/21-days.html" target="_blank">(Norvig)</a>.</p>
+  <p class="where">Where: open source · the source of your daily dependencies.</p>
+</div>
+
+<div class="you-are-here">
+  <strong>You are (probably) here →</strong> At ~2.5 years aiming full-stack, your highest-leverage time is <strong>Rung 4 (real apps)</strong> plus <strong>Rung 2 by pattern</strong>. Treat Rung 1 as warm-ups, not the main event. Use <a href="https://roadmap.sh/full-stack" target="_blank">roadmap.sh/full-stack</a> to spot which specific Rung-4 skills (auth, caching, testing, CI/CD…) you're missing.
+</div>
+
+<div class="warn">
+  <p><strong>The one habit that makes any rung count:</strong> apply the deliberate loop — pick a <em>target</em> at your edge, get <em>fast feedback</em>, and <em>review</em> the pattern you learned. Random difficulty on any rung still wastes reps.</p>
+</div>
+
+<div class="primary-source">
+  <strong>📖 Primary source for this lesson</strong>
+  <a href="https://seanprashad.com/leetcode-patterns/" target="_blank">Sean Prashad — LeetCode Patterns</a> — the clearest demonstration of "practice by pattern, not at random." Pair it with <a href="https://roadmap.sh/full-stack" target="_blank">roadmap.sh/full-stack</a> to map your stage.
+</div>
+
+<div class="community">
+  <strong>🌍 Test it with real people</strong>
+  Post one finished Rung-4 project for review on <a href="https://www.reddit.com/r/webdev/" target="_blank">r/webdev</a> or get approach-level feedback from a mentor on <a href="https://exercism.org/tracks/javascript" target="_blank">Exercism</a>. Feedback turns practice into deliberate practice.
+</div>
+
+<h2>Your turn: build a 4-week plan</h2>
+<p>Replace "random Codewars" with this. Write it down:</p>
+<ol>
+  <li><strong>One Rung-4 project</strong> you'll ship in 4 weeks (small &amp; real — e.g. a notes app with auth + a database).</li>
+  <li><strong>One Rung-2 pattern per week</strong> (e.g. week 1: sliding window → 4 problems from the patterns list).</li>
+  <li><strong>10-min warm-up</strong> on Rung 1 before each session (optional).</li>
+  <li><strong>Weekly review:</strong> what got you stuck? That gap is next week's target.</li>
+</ol>
+<p>Keep the <a href="../reference/0003-the-practice-stack.html">practice-stack one-pager</a> next to you.</p>
+
+<hr class="div" />
+
+<div class="quiz" id="quiz">
+  <h3>Check your understanding</h3>
+
+  <div class="question" id="q1">
+    <p><strong>1.</strong> Why is solving random Codewars katas a weak strategy?</p>
+    <div class="options">
+      <button class="option" onclick="answer(1, this, false)">Codewars problems are too easy for anyone</button>
+      <button class="option" onclick="answer(1, this, true)">Random reps rarely hit your ability edge</button>
+      <button class="option" onclick="answer(1, this, false)">Katas only ever cover backend related skills</button>
+      <button class="option" onclick="answer(1, this, false)">Gamified sites cannot teach real programming</button>
+    </div>
+    <p class="feedback" id="f1"></p>
+  </div>
+
+  <div class="question" id="q2">
+    <p><strong>2.</strong> Best way to practice data structures and algorithms?</p>
+    <div class="options">
+      <button class="option" onclick="answer(2, this, false)">Shuffle hard problems across many mixed topics</button>
+      <button class="option" onclick="answer(2, this, true)">Group several problems under one shared pattern</button>
+      <button class="option" onclick="answer(2, this, false)">Memorize full solutions to popular hard problems</button>
+      <button class="option" onclick="answer(2, this, false)">Avoid them entirely and only build large apps</button>
+    </div>
+    <p class="feedback" id="f2"></p>
+  </div>
+
+  <div class="question" id="q3">
+    <p><strong>3.</strong> Why can't katas alone make you a full-stack developer?</p>
+    <div class="options">
+      <button class="option" onclick="answer(3, this, false)">Katas teach outdated languages nobody uses now</button>
+      <button class="option" onclick="answer(3, this, true)">They skip UIs, APIs, databases, auth, deploy</button>
+      <button class="option" onclick="answer(3, this, false)">They require a paid subscription to be useful</button>
+      <button class="option" onclick="answer(3, this, false)">They only ever work for absolute beginners</button>
+    </div>
+    <p class="feedback" id="f3"></p>
+  </div>
+
+  <div class="question" id="q4">
+    <p><strong>4.</strong> For a 2.5-year dev aiming full-stack, the biggest lever is:</p>
+    <div class="options">
+      <button class="option" onclick="answer(4, this, false)">Grinding many more easy fluency warm-up katas</button>
+      <button class="option" onclick="answer(4, this, true)">Shipping real end-to-end apps with feedback</button>
+      <button class="option" onclick="answer(4, this, false)">Reading theory books before writing any code</button>
+      <button class="option" onclick="answer(4, this, false)">Memorizing the entire full-stack roadmap tree</button>
+    </div>
+    <p class="feedback" id="f4"></p>
+  </div>
+
+  <div class="question" id="q5">
+    <p><strong>5.</strong> What makes practice on any rung actually "deliberate"?</p>
+    <div class="options">
+      <button class="option" onclick="answer(5, this, false)">Doing the highest possible total hours weekly</button>
+      <button class="option" onclick="answer(5, this, true)">Edge target, fast feedback, then a review</button>
+      <button class="option" onclick="answer(5, this, false)">Always picking the single hardest task available</button>
+      <button class="option" onclick="answer(5, this, false)">Switching platforms whenever you feel bored</button>
+    </div>
+    <p class="feedback" id="f5"></p>
+  </div>
+
+  <div class="score-area" id="score-area"><p id="score-text"></p></div>
+</div>
+
+<div class="nav">
+  <p><a href="0002-what-makes-solvers-great.html">← Lesson 2 — What makes solvers great</a> &nbsp;·&nbsp; <a href="../../../index.html">Home</a> &nbsp;·&nbsp; Lesson 4 (coming next: <em>Understand deeply — examples &amp; edge cases</em>) →</p>
+  <p style="margin-top:0.5rem">Reference: <a href="../reference/0003-the-practice-stack.html">The practice stack (one-pager)</a></p>
+  <p style="margin-top:0.5rem">Have a question? <strong>Ask your teacher</strong> in the chat — that's what they're there for.</p>
+</div>
+
+<script>
+  const answers = {};
+  const correct = { 1:false,2:false,3:false,4:false,5:false };
+  const total = 5;
+  const feedbacks = {
+    1: { ok: "Right. Random katas mostly retest fluency you already have and seldom land at the edge where learning happens.",
+         err: "Not quite. The issue is that random reps rarely hit the edge of your ability — the only place deliberate practice works." },
+    2: { ok: "Exactly. Group several problems under one pattern so it becomes a reusable chunk, instead of shuffling.",
+         err: "Not quite. Practice by pattern — several problems sharing one idea — so it becomes a chunk, rather than shuffling or memorizing." },
+    3: { ok: "Right. Katas never touch UIs, APIs, databases, auth, or deploy — the core of full-stack work.",
+         err: "Not quite. Katas skip the full-stack layers: UIs, APIs, databases, auth, and deployment." },
+    4: { ok: "Right. Shipping real end-to-end apps (with feedback) is where intermediate becomes full-stack.",
+         err: "Not quite. The biggest lever now is building and shipping real end-to-end apps, with feedback — not more easy katas." },
+    5: { ok: "Right. A target at your edge, fast feedback, and a review of what you learned — on any rung.",
+         err: "Not quite. Deliberate means an edge target, fast feedback, and a review — not just more hours or the hardest task." }
+  };
+  function answer(qNum, btn, isCorrect) {
+    if (answers[qNum] !== undefined) return;
+    answers[qNum] = isCorrect; correct[qNum] = isCorrect;
+    const opts = btn.closest('.question').querySelectorAll('.option');
+    opts.forEach(o => { o.disabled = true; });
+    if (isCorrect) {
+      btn.classList.add('correct');
+      document.getElementById('f'+qNum).innerHTML = '✓ ' + feedbacks[qNum].ok;
+      document.getElementById('f'+qNum).className = 'feedback ok';
+    } else {
+      btn.classList.add('wrong');
+      document.getElementById('f'+qNum).innerHTML = '✗ ' + feedbacks[qNum].err;
+      document.getElementById('f'+qNum).className = 'feedback err';
+      opts.forEach(o => { if (o.onclick.toString().includes(', true)')) o.classList.add('reveal'); });
+    }
+    if (Object.keys(answers).length === total) showScore();
+  }
+  function showScore() {
+    const got = Object.values(correct).filter(Boolean).length;
+    document.getElementById('score-area').classList.add('visible');
+    const msgs = [
+      "Re-read the rungs above, then try again.",
+      "Getting there — revisit the points you missed.",
+      "Halfway. Look back at the rung descriptions.",
+      "Solid. The stack is landing.",
+      "Strong — now write your 4-week plan.",
+      "Perfect. You've replaced random with deliberate."
+    ];
+    document.getElementById('score-text').innerHTML = `<strong>${got}/${total}</strong> — ${msgs[got] || msgs[0]}`;
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — Deliberate Practice for Web Devs</title>
+  <style>
+    :root { --text:#1a1a1a; --muted:#666; --accent:#2563eb; --code-bg:#f5f5f0; --border:#d8d8d0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif; color: var(--text); line-height: 1.55;
+      max-width: 760px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; background: #fafaf8;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.2rem; }
+    .sub { color: var(--muted); font-size: 0.85rem; font-style: italic; margin-bottom: 1.75rem; }
+    h2 { font-size: 1.05rem; margin: 1.6rem 0 0.5rem; }
+    .card { border: 1px solid var(--border); border-radius: 8px; background: white; padding: 1rem 1.25rem; margin-bottom: 0.9rem; page-break-inside: avoid; }
+    ul { margin: 0.3rem 0 0 1.2rem; } li { font-size: 0.92rem; margin-bottom: 0.3rem; }
+    .big { font-size: 0.95rem; background: #eff6ff; border-left: 3px solid var(--accent); padding: 0.6rem 0.9rem; border-radius: 0 6px 6px 0; margin: 1.25rem 0; }
+    code { font-family: 'SF Mono','Menlo',monospace; font-size: 0.82rem; background: var(--code-bg); padding: 0.08em 0.3em; border-radius: 3px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-weight: normal; font-style: italic; }
+    footer { margin-top: 2rem; font-size: 0.8rem; color: var(--muted); }
+    a { color: var(--accent); }
+    @media print { body { background: white; } }
+  </style>
+</head>
+<body>
+  <h1>Deliberate Practice for Web Devs</h1>
+  <p class="sub">Quick reference · how solving problems turns into expertise</p>
+
+  <div class="big"><strong>The core idea:</strong> Experts aren't faster thinkers — they have bigger <em>pattern libraries</em>. You grow yours through <em>deliberate practice</em>: work just past your current ability, with immediate feedback, analysing every mistake.</div>
+
+  <h2>Ordinary practice vs. deliberate practice</h2>
+  <table>
+    <tr><th>Ordinary</th><th>Deliberate</th></tr>
+    <tr><td>Re-do what you can already do</td><td>Pick a task just beyond your ability</td></tr>
+    <tr><td>Vague goal ("get better")</td><td>One specific, measurable target</td></tr>
+    <tr><td>Feedback is late or absent</td><td>Immediate feedback (tests, peers, errors)</td></tr>
+    <tr><td>Move on after it "works"</td><td>Analyse the mistake; fix the gap</td></tr>
+    <tr><td>Comfortable, autopilot</td><td>Effortful, full concentration</td></tr>
+  </table>
+
+  <h2>The deliberate-practice rep (one sitting)</h2>
+  <div class="card"><ul>
+    <li><strong>Target:</strong> name one skill at the edge of your ability (e.g. "solve it without console.log").</li>
+    <li><strong>Attempt:</strong> run the <a href="0001-problem-solving-loop.html">four-step loop</a> on a problem that stretches it.</li>
+    <li><strong>Feedback:</strong> tests, an error message, or another dev's review — fast and honest.</li>
+    <li><strong>Analyse:</strong> where exactly did you get stuck? That gap names your next target.</li>
+    <li><strong>Bank the chunk:</strong> write down the pattern you learned so it's reusable.</li>
+  </ul></div>
+
+  <h2>Norvig's recipe — becoming a great developer</h2>
+  <div class="card"><ul>
+    <li><strong>Build</strong> real things — learning by doing beats reading.</li>
+    <li><strong>Read</strong> other people's code; talk with other programmers.</li>
+    <li>Work <strong>with</strong> other programmers, and <strong>after</strong> them (maintain their code).</li>
+    <li>Learn several <strong>paradigms</strong> (OO, functional, declarative…), not just one framework.</li>
+    <li>Know your machine's <strong>performance</strong> characteristics.</li>
+    <li>Expect it to take <strong>years</strong>, not days — expertise compounds.</li>
+  </ul></div>
+
+  <h2>Web-dev edge cases of "stretch"</h2>
+  <div class="card"><ul>
+    <li>Rebuild a feature you copied, from scratch, without looking.</li>
+    <li>Read the source of a library you use every day.</li>
+    <li>Ship something real and small; get users; fix what breaks.</li>
+    <li>Explain a concept out loud / in writing — teaching exposes gaps.</li>
+  </ul></div>
+
+  <footer>
+    Lesson: <a href="../lessons/0002-what-makes-solvers-great.html">What makes solvers great</a> ·
+    Sources: <a href="https://norvig.com/21-days.html" target="_blank">Norvig</a>,
+    <a href="https://www.ida.liu.se/~nilda08/Anders_Ericsson/Ericsson_delib_pract.pdf" target="_blank">Ericsson 1993</a>,
+    <a href="https://www.lrdc.pitt.edu/schunn/papers/Nokes,%20Schunn,%20&%20Chi,%202010.pdf" target="_blank">Nokes/Schunn/Chi 2010</a>
+  </footer>
+</body>
+</html>
